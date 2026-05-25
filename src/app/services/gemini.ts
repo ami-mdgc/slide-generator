@@ -1,3 +1,5 @@
+import { SlideDefinition } from "../data/slide-structures";
+
 const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
@@ -18,7 +20,7 @@ async function call(prompt: string): Promise<string> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.7 },
+      generationConfig: { temperature: 0.5 },
     }),
   });
 
@@ -31,68 +33,88 @@ async function call(prompt: string): Promise<string> {
   return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
-export interface GeneratedSlide {
-  title: string;
-  content: string;
-}
-
-export async function generateSlidesFromText(
+/** テンプレート構成に原稿を当てはめてスライドを生成 */
+export async function generateSlidesWithStructure(
   rawText: string,
-  slideType: string
-): Promise<GeneratedSlide[]> {
-  const prompt = `あなたはプレゼンテーション作成の専門家です。
-以下の原稿・メモを、ビジネスプレゼンテーションのスライド構成に変換してください。
-スライドタイプ: ${slideType}
+  slides: SlideDefinition[]
+): Promise<{ slideIndex: number; content: string }[]> {
+  const structureDesc = slides
+    .map(
+      (s, i) =>
+        `### スライド${i + 1}「${s.name}」\n役割: ${s.role}\n出力形式:\n${s.markdownFormat}`
+    )
+    .join("\n\n");
 
-【原稿・メモ】
+  const prompt = `あなたは営業資料スライド作成の専門家です。
+以下の原稿を分析し、指定されたスライド構成の各スライドの内容を生成してください。
+
+## スライド構成と出力形式
+
+${structureDesc}
+
+## 原稿
 ${rawText}
 
-【出力形式】
-以下のJSON形式のみで返してください。説明文や前置きは不要です。
+## 指示
+- 原稿の情報を各スライドの「役割」に合わせて振り分ける
+- 原稿にない情報は補完しない（空欄または「—」とする）
+- 各スライドは上記「出力形式」の構造を忠実に守る
+- 数値・KPIは原稿から正確に抜き出す
+- 以下のJSONのみ返す（説明不要）
 
-{
-  "slides": [
-    {
-      "title": "スライドタイトル",
-      "content": "# タイトル\n\n- 箇条書き1\n- 箇条書き2\n\n**重要な数値や情報**"
-    }
-  ]
-}
-
-【ルール】
-- contentはマークダウン形式で記述する
-- 1枚のスライドに詰め込みすぎない（箇条書きは最大5項目）
-- タイトルは簡潔に（15文字以内）
-- 重要な数値・KPIは**太字**にする
-- スライド枚数は原稿の量に応じて3〜8枚程度`;
+{"slides":[{"slideIndex":0,"content":"..."},{"slideIndex":1,"content":"..."}]}`;
 
   const text = await call(prompt);
-
-  // JSONを抽出
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error("スライドの生成に失敗しました");
 
   const parsed = JSON.parse(match[0]);
-  return parsed.slides as GeneratedSlide[];
+  return parsed.slides as { slideIndex: number; content: string }[];
 }
 
+/** 通常タイプ用：自由生成 */
+export async function generateSlidesFromText(
+  rawText: string
+): Promise<{ title: string; content: string }[]> {
+  const prompt = `あなたはプレゼンテーション作成の専門家です。
+以下の原稿をビジネスプレゼンテーションのスライドに変換してください。
+
+【原稿】
+${rawText}
+
+【出力形式】JSONのみ返してください（説明不要）
+{"slides":[{"title":"タイトル","content":"# タイトル\n\n- 項目1\n- 項目2"}]}
+
+【ルール】
+- 1枚に詰め込みすぎない（箇条書き最大5項目）
+- 重要な数値は**太字**
+- スライド枚数は3〜7枚`;
+
+  const text = await call(prompt);
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error("スライドの生成に失敗しました");
+
+  const parsed = JSON.parse(match[0]);
+  return parsed.slides;
+}
+
+/** AI修正アシスタント */
 export async function editSlideWithAI(
   currentContent: string,
   instruction: string
 ): Promise<string> {
   const prompt = `あなたはプレゼンテーション編集アシスタントです。
-以下のスライドコンテンツに対して、指示に従って修正してください。
+以下のスライドを指示に従って修正してください。
 
-【現在のスライドコンテンツ】
+【現在のスライド】
 ${currentContent}
 
 【修正指示】
 ${instruction}
 
 【ルール】
-- 修正後のマークダウンコンテンツのみを返す
-- 説明文や前置きは一切不要
-- マークダウンの形式を保つ
+- 修正後のマークダウンのみを返す（説明不要）
+- 既存の形式・構造を維持する
 - 元の情報を不用意に削除しない`;
 
   return await call(prompt);

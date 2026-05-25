@@ -6,6 +6,7 @@ import { Edit3, Sparkles, Plus, Trash2, Wand2 } from "lucide-react";
 import { AIAssistant } from "./AIAssistant";
 import { TextToSlides } from "./TextToSlides";
 import { Slide } from "../utils/markdown-parser";
+import { SlideDefinition } from "../data/slide-structures";
 
 interface SlideEditPanelProps {
   currentSlideContent: string;
@@ -14,6 +15,7 @@ interface SlideEditPanelProps {
   onAddSlide?: () => void;
   onDeleteSlide?: () => void;
   onSlidesGenerate?: (slides: Slide[]) => void;
+  slideStructure?: SlideDefinition[];
   totalSlides: number;
 }
 
@@ -26,6 +28,7 @@ export function SlideEditPanel({
   onAddSlide,
   onDeleteSlide,
   onSlidesGenerate,
+  slideStructure = [],
   totalSlides
 }: SlideEditPanelProps) {
   const [panelView, setPanelView] = useState<PanelView>("generate");
@@ -90,7 +93,7 @@ export function SlideEditPanel({
 
       {panelView === "generate" && onSlidesGenerate && (
         <div className="flex-1 overflow-hidden">
-          <TextToSlides onGenerate={onSlidesGenerate} />
+          <TextToSlides slideStructure={slideStructure} onGenerate={onSlidesGenerate} />
         </div>
       )}
 
