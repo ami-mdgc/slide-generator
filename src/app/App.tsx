@@ -8,6 +8,7 @@ import { ManualDesignSystemImport } from "./components/ManualDesignSystemImport"
 import { parseMarkdownToSlides, Slide } from "./utils/markdown-parser";
 import { DesignSystem, DEFAULT_DESIGN_SYSTEMS } from "./types/design-system";
 import { Button } from "./components/ui/button";
+import { ApiKeySettings } from "./components/ApiKeySettings";
 import { Download, FileText, Trash2 } from "lucide-react";
 
 export default function App() {
@@ -91,6 +92,11 @@ export default function App() {
       }));
       setSlides(updatedSlides);
     }
+  };
+
+  const handleSlidesGenerate = (newSlides: Slide[]) => {
+    setSlides(newSlides);
+    setCurrentSlideIndex(0);
   };
 
   const handleFileLoad = (content: string, name: string) => {
@@ -211,6 +217,7 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-2">
+          <ApiKeySettings />
           <FigmaSync onDesignSystemSync={setDesignSystem} />
           <ManualDesignSystemImport onImport={setDesignSystem} />
           <DesignSystemSettings
@@ -257,7 +264,7 @@ export default function App() {
             slideIndex={currentSlideIndex}
             onAddSlide={handleAddSlide}
             onDeleteSlide={handleDeleteSlide}
-            onLoadMarkdown={handleFileLoad}
+            onSlidesGenerate={handleSlidesGenerate}
             totalSlides={slides.length}
           />
         </div>
