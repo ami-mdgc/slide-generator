@@ -1,0 +1,115 @@
+/* Gen Interface JP — app UI用 */
+@font-face {
+  font-family: 'Gen Interface JP';
+  src: url('/fonts/GenInterfaceJP-Thin.ttf') format('truetype');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gen Interface JP';
+  src: url('/fonts/GenInterfaceJP-ExtraLight.ttf') format('truetype');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gen Interface JP';
+  src: url('/fonts/GenInterfaceJP-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gen Interface JP';
+  src: url('/fonts/GenInterfaceJP-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gen Interface JP';
+  src: url('/fonts/GenInterfaceJP-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gen Interface JP';
+  src: url('/fonts/GenInterfaceJP-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gen Interface JP';
+  src: url('/fonts/GenInterfaceJP-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gen Interface JP';
+  src: url('/fonts/GenInterfaceJP-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Gen Interface JP Display — Figma テンプレート用（ウェイト別ファミリー名） */
+@font-face {
+  font-family: 'Gen Interface JP Display:Thin';
+  src: url('/fonts/GenInterfaceJPDisplay-Thin.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gen Interface JP Display:ExtraLight';
+  src: url('/fonts/GenInterfaceJPDisplay-ExtraLight.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gen Interface JP Display:Light';
+  src: url('/fonts/GenInterfaceJPDisplay-Light.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gen Interface JP Display:Regular';
+  src: url('/fonts/GenInterfaceJPDisplay-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gen Interface JP Display:Medium';
+  src: url('/fonts/GenInterfaceJPDisplay-Medium.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gen Interface JP Display:SemiBold';
+  src: url('/fonts/GenInterfaceJPDisplay-SemiBold.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gen Interface JP Display:Bold';
+  src: url('/fonts/GenInterfaceJPDisplay-Bold.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gen Interface JP Display:ExtraBold';
+  src: url('/fonts/GenInterfaceJPDisplay-ExtraBold.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
