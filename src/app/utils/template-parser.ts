@@ -1,0 +1,270 @@
+import { Slide } from "./markdown-parser";
+import { SlideTemplateData } from "../types/slide-template";
+
+interface ParsedSlideMetadata {
+  slideType?: string;
+  date?: string;
+  [key: string]: any;
+}
+
+export function parseSlideMetadata(markdown: string): ParsedSlideMetadata {
+  const metadata: ParsedSlideMetadata = {};
+
+  // Extract frontmatter (YAML between ---)
+  const frontmatterMatch = markdown.match(/^---\n([\s\S]*?)\n---/);
+
+  if (frontmatterMatch) {
+    const frontmatter = frontmatterMatch[1];
+    const lines = frontmatter.split('\n');
+
+    lines.forEach(line => {
+      const match = line.match(/^(\w+):\s*(.+)$/);
+      if (match) {
+        const [, key, value] = match;
+        metadata[key] = value.trim();
+      }
+    });
+  }
+
+  return metadata;
+}
+
+export function parseTemplate01Data(slide: Slide, content: string): SlideTemplateData {
+  const lines = content.split('\n').filter(line => line.trim());
+
+  // Extract title
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1] : slide.title || '';
+
+  // Extract summary items (lines with bullet points or key-value pairs)
+  const summaryItems: { text: string }[] = [];
+  const metrics: { label: string; value: string; reference?: string }[] = [];
+
+  let currentSection = 'summary';
+
+  lines.forEach(line => {
+    // Skip title line
+    if (line.startsWith('#')) return;
+
+    // Detect metrics section
+    if (line.includes('事業売上') || line.includes('3月参考')) {
+      currentSection = 'metrics';
+    }
+
+    if (currentSection === 'summary') {
+      // Parse bullet points or key-value pairs
+      if (line.startsWith('-') || line.startsWith('*')) {
+        summaryItems.push({ text: line.substring(1).trim() });
+      } else if (line.includes(':')) {
+        summaryItems.push({ text: line.trim() });
+      }
+    } else if (currentSection === 'metrics') {
+      // Parse metrics
+      const metricMatch = line.match(/(.+?)[:：]\s*(.+)/);
+      if (metricMatch) {
+        const [, label, value] = metricMatch;
+
+        // Check if it's a reference line
+        if (label.includes('参考') || label.includes('前月')) {
+          if (metrics.length > 0) {
+            metrics[metrics.length - 1].reference = line.trim();
+          }
+        } else {
+          metrics.push({
+            label: label.trim(),
+            value: value.trim(),
+          });
+        }
+      }
+    }
+  });
+
+  // Fill in default metrics if not enough
+  while (metrics.length < 3) {
+    metrics.push({
+      label: '事業売上',
+      value: '¥37,249,030',
+      reference: '3月参考：¥37,249,030',
+    });
+  }
+
+  // Fill in default summary items if not enough
+  while (summaryItems.length < 3) {
+    summaryItems.push({
+      text: 'テキストテキストテキストテキストテキスト',
+    });
+  }
+
+  return {
+    title,
+    summaryItems: summaryItems.slice(0, 3),
+    metrics: metrics.slice(0, 3),
+  };
+}
+
+export function parseTemplate02Data(slide: Slide, content: string): SlideTemplateData {
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1] : slide.title || '';
+
+  const sections: { heading: string; subheading: string; items: string[] }[] = [];
+  const sectionMatches = content.matchAll(/##\s+(.+?)\n([^#]+)/g);
+
+  for (const match of sectionMatches) {
+    const heading = match[1].trim();
+    const sectionContent = match[2];
+
+    const items = sectionContent
+      .split('\n')
+      .filter(line => line.trim().startsWith('-') || line.trim().startsWith('*'))
+      .map(line => line.replace(/^[-*]\s+/, '').trim());
+
+    sections.push({
+      heading: heading,
+      subheading: '小見出し',
+      items: items.length > 0 ? items : ['テキストテキストテキスト'],
+    });
+  }
+
+  while (sections.length < 2) {
+    sections.push({
+      heading: '中見出し',
+      subheading: '小見出し',
+      items: ['テキストテキストテキスト'],
+    });
+  }
+
+  return { title, sections };
+}
+
+export function parseTemplate03Data(slide: Slide, content: string): SlideTemplateData {
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1] : slide.title || '';
+
+  const themeMatch = content.match(/##\s*テーマ\s*\n(.+)/);
+  const theme = {
+    label: '事業粗利',
+    text: themeMatch ? themeMatch[1].trim().replace(/[「」]/g, '') : '粗利達成のための当月開始',
+  };
+
+  const metrics: { label: string; value: string; reference: string }[] = [];
+  const goalMatches = content.matchAll(/[-*]\s*(.+?)[:：]\s*(.+)/g);
+
+  for (const match of goalMatches) {
+    const [, label, value] = match;
+    if (!label.includes('参考')) {
+      metrics.push({
+        label: label.trim() + '目標',
+        value: value.trim(),
+        reference: '3月参考：¥37,249,030',
+      });
+    }
+  }
+
+  while (metrics.length < 3) {
+    metrics.push({
+      label: '事業売上目標',
+      value: '¥37,249,030',
+      reference: '3月参考：¥37,249,030',
+    });
+  }
+
+  return { title, theme, metrics: metrics.slice(0, 3) };
+}
+
+export function parseTemplate04Data(slide: Slide, content: string): SlideTemplateData {
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1] : slide.title || '';
+
+  const initiatives: { smallHeading: string; heading: string; items: { label: string; text: string }[] }[] = [];
+  const sectionMatches = content.matchAll(/##\s+(.+?)\n([\s\S]*?)(?=##|$)/g);
+
+  let sectionIndex = 0;
+  for (const match of sectionMatches) {
+    const heading = match[1].trim();
+    const sectionContent = match[2];
+
+    const items: { label: string; text: string }[] = [];
+    const listMatches = sectionContent.matchAll(/[-*]\s+\*\*(.+?)\*\*\s*\n\s*[-*]\s+(.+)/g);
+
+    for (const listMatch of listMatches) {
+      items.push({
+        label: listMatch[1].trim(),
+        text: listMatch[2].trim(),
+      });
+    }
+
+    if (items.length === 0) {
+      items.push({ label: '背景', text: 'テキストテキストテキスト' });
+      items.push({ label: '打ち手', text: 'テキストテキストテキスト' });
+      items.push({ label: '狙い', text: 'テキストテキストテキスト' });
+    }
+
+    initiatives.push({
+      smallHeading: `小見出し${sectionIndex + 1}`,
+      heading: heading,
+      items,
+    });
+    sectionIndex++;
+  }
+
+  while (initiatives.length < 3) {
+    initiatives.push({
+      smallHeading: '小見出し',
+      heading: '中見出し',
+      items: [
+        { label: '背景', text: 'テキストテキストテキスト' },
+        { label: '打ち手', text: 'テキストテキストテキスト' },
+        { label: '狙い', text: 'テキストテキストテキスト' },
+      ],
+    });
+  }
+
+  return { title, initiatives: initiatives.slice(0, 3) };
+}
+
+export function parseTemplate05Data(slide: Slide, content: string): SlideTemplateData {
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1] : slide.title || '';
+
+  const subtitleMatch = content.match(/##\s+(.+)$/m);
+  const subtitle = subtitleMatch ? subtitleMatch[1] : '';
+
+  const sections: { heading: string; text: string }[] = [];
+  const sectionMatches = content.matchAll(/[-*]\s+\*\*(.+?)\*\*[:：]?\s*(.+)/g);
+
+  for (const match of sectionMatches) {
+    sections.push({
+      heading: match[1].trim(),
+      text: match[2].trim(),
+    });
+  }
+
+  if (sections.length === 0) {
+    sections.push({ heading: '背景', text: 'テキストテキストテキスト' });
+    sections.push({ heading: '進め方', text: 'テキストテキストテキスト' });
+    sections.push({ heading: '期待する効果', text: 'テキストテキストテキスト' });
+  }
+
+  return { title, subtitle, sections };
+}
+
+export function parseTemplateData(templateId: string, slide: Slide, content: string): SlideTemplateData {
+  switch (templateId) {
+    case 'template01':
+      return parseTemplate01Data(slide, content);
+    case 'template02':
+      return parseTemplate02Data(slide, content);
+    case 'template03':
+      return parseTemplate03Data(slide, content);
+    case 'template04':
+      return parseTemplate04Data(slide, content);
+    case 'template05':
+      return parseTemplate05Data(slide, content);
+
+    default:
+      return {
+        title: slide.title || '',
+        content: content,
+      };
+  }
+}
