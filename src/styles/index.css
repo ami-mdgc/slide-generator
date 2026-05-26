@@ -3,12 +3,29 @@
 @import './theme.css';
 
 /* ── PDF print export ─────────────────────────────── */
+
+/* Normal mode: portal is in body but hidden off-screen */
+#pdf-print-layer {
+  position: fixed;
+  top: 0;
+  left: -9999px;
+  width: 1920px;
+  pointer-events: none;
+  z-index: -1;
+}
+
 @media print {
-  /* Hide everything except the PDF layer */
-  body > * {
+  /* The portal is body > #pdf-print-layer; hide everything else */
+  body > *:not(#pdf-print-layer) {
     display: none !important;
   }
+
   #pdf-print-layer {
+    position: static !important;
+    left: auto !important;
+    width: auto !important;
+    z-index: auto !important;
+    pointer-events: auto !important;
     display: block !important;
   }
 
@@ -29,18 +46,17 @@
     justify-content: center;
   }
 
-  /* 16:9 wrapper fits A4 landscape width */
+  /* 16:9 wrapper – fits A4 landscape width, ~167mm tall */
   .pdf-slide-wrapper {
     width: 297mm;
-    /* 297mm × (9/16) ≈ 167mm */
     aspect-ratio: 16 / 9;
     overflow: hidden;
     position: relative;
     flex-shrink: 0;
   }
 
-  /* Scale 1920×1080 template to fill the wrapper */
-  /* 297mm at 96 CSS px/inch = 1122.52px  →  scale = 1122.52/1920 ≈ 0.5846 */
+  /* Scale 1920×1080 template to fill the wrapper.
+     297mm at 96 CSS px/inch = 1122.52px → scale = 1122.52/1920 ≈ 0.5846 */
   .pdf-slide-inner {
     position: absolute;
     top: 0;

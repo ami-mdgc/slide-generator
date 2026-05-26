@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Slide } from "../utils/markdown-parser";
 import { DesignSystem } from "../types/design-system";
 import { TEMPLATE_REGISTRY } from "../types/slide-template";
@@ -12,16 +13,10 @@ interface PDFExportLayerProps {
   onError: (err: Error) => void;
 }
 
-export function PDFExportLayer({
-  slides,
-  designSystem,
-  onDone,
-}: PDFExportLayerProps) {
+export function PDFExportLayer({ slides, designSystem, onDone }: PDFExportLayerProps) {
   useEffect(() => {
-    // Wait for fonts + layout, then trigger the browser print dialog
-    const timer = setTimeout(() => {
-      window.print();
-    }, 600);
+    // Give React time to render all slides, then open print dialog
+    const timer = setTimeout(() => window.print(), 600);
 
     const handleAfterPrint = () => onDone();
     window.addEventListener("afterprint", handleAfterPrint);
@@ -32,9 +27,10 @@ export function PDFExportLayer({
     };
   }, [onDone]);
 
-  return (
-    // id="pdf-print-layer" is targeted by the @media print CSS
-    <div id="pdf-print-layer" style={{ display: "none" }}>
+  // Render as a portal directly into <body> so that
+  // `body > *:not(#pdf-print-layer)` correctly hides the app root
+  return createPortal(
+    <div id="pdf-print-layer">
       {slides.map((slide) => {
         const templateDef = slide.templateId
           ? TEMPLATE_REGISTRY[slide.templateId]
@@ -65,8 +61,7 @@ export function PDFExportLayer({
                       boxSizing: "border-box",
                       width: "100%",
                       height: "100%",
-                      backgroundColor:
-                        designSystem.colors.background || "#ffffff",
+                      backgroundColor: designSystem.colors.background || "#ffffff",
                       color: designSystem.colors.text || "#1e293b",
                     }}
                   >
@@ -78,6 +73,7 @@ export function PDFExportLayer({
           </div>
         );
       })}
-    </div>
+    </div>,
+    document.body
   );
 }
