@@ -9,54 +9,61 @@
   position: fixed;
   top: 0;
   left: -9999px;
-  width: 1920px;
-  pointer-events: none;
+  width: 0;
+  height: 0;
+  overflow: hidden;
   z-index: -1;
+  pointer-events: none;
 }
 
 @media print {
-  /* The portal is body > #pdf-print-layer; hide everything else */
+  /* Hide everything in <body> except the PDF portal */
   body > *:not(#pdf-print-layer) {
     display: none !important;
   }
 
+  /* Reset all hiding styles explicitly */
   #pdf-print-layer {
+    display: block !important;
     position: static !important;
+    top: auto !important;
     left: auto !important;
     width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
     z-index: auto !important;
     pointer-events: auto !important;
-    display: block !important;
   }
 
+  /* Custom 16:9 page – no white margins */
   @page {
-    size: A4 landscape;
+    size: 297mm 167.0625mm;
     margin: 0;
   }
 
-  /* One slide per page */
+  /* One slide per printed page */
   .pdf-slide-page {
     width: 297mm;
-    height: 210mm;
+    height: 167.0625mm;
     overflow: hidden;
     page-break-after: always;
     break-after: page;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: relative;
   }
 
-  /* 16:9 wrapper – fits A4 landscape width, ~167mm tall */
+  /* Wrapper matches the page exactly */
   .pdf-slide-wrapper {
     width: 297mm;
-    aspect-ratio: 16 / 9;
+    height: 167.0625mm;
     overflow: hidden;
     position: relative;
-    flex-shrink: 0;
   }
 
-  /* Scale 1920×1080 template to fill the wrapper.
-     297mm at 96 CSS px/inch = 1122.52px → scale = 1122.52/1920 ≈ 0.5846 */
+  /*
+   * Scale 1920×1080 template down to fit the page.
+   * 297mm at 96 CSS px/inch = 1122.52px
+   * scale = 1122.52 / 1920 ≈ 0.5846
+   */
   .pdf-slide-inner {
     position: absolute;
     top: 0;
@@ -64,7 +71,7 @@
     width: 1920px;
     height: 1080px;
     transform: scale(0.5846);
-    transform-origin: top left;
+    transform-origin: 0 0;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
