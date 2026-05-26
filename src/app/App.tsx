@@ -1,21 +1,56 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SlideViewer } from "./components/SlideViewer";
 import { SlideThumbnails } from "./components/SlideThumbnails";
 import { SlideEditPanel } from "./components/SlideEditPanel";
 import { DesignSystemSettings } from "./components/DesignSystemSettings";
-import { ProjectSetup, ProjectConfig } from "./components/ProjectSetup";
+import { HomeScreen } from "./components/HomeScreen";
 import { Slide } from "./utils/markdown-parser";
 import { DesignSystem, DEFAULT_DESIGN_SYSTEMS } from "./types/design-system";
+import { Project, loadProjects, saveProject, deleteProject } from "./types/project";
 import { SLIDE_STRUCTURES, BUSINESS_COLORS } from "./data/slide-structures";
 import { Button } from "./components/ui/button";
-import { Download, Plus } from "lucide-react";
+import { Download, ChevronLeft } from "lucide-react";
 
-type AppPhase = "setup" | "editor";
+type AppPhase = "home" | "editor";
+
+const SLIDE_TYPES = Object.keys(SLIDE_STRUCTURES);
+const BUSINESS_TYPES = Object.keys(BUSINESS_COLORS);
+
+function buildDesignSystem(base: DesignSystem, businessType: string): DesignSystem {
+  const colors = BUSINESS_COLORS[businessType];
+  if (!colors) return base;
+  return { ...base, colors: { ...base.colors, primary: colors.primary, accent: colors.accent } };
+}
+
+function createNewProject(slideType: string, businessType: string): Project {
+  const structure = SLIDE_STRUCTURES[slideType];
+  const slides: Slide[] =
+    structure && structure.slides.length > 0
+      ? structure.slides.map((def, i) => ({
+          id: `slide-${i}`,
+          content: `# ${def.name}\n\n内容を入力してください`,
+          title: def.name,
+          templateId: def.templateId,
+          slideType,
+        }))
+      : [{ id: "slide-0", content: "# 新しいスライド\n\n内容を入力してください", title: "新しいスライド" }];
+
+  const now = new Date().toISOString();
+  return {
+    id: `project-${Date.now()}`,
+    name: "無題のプレゼンテーション",
+    slideType,
+    businessType,
+    slides,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
 
 export default function App() {
-  const [phase, setPhase] = useState<AppPhase>("setup");
-  const [projectConfig, setProjectConfig] = useState<ProjectConfig | null>(null);
-  const [slides, setSlides] = useState<Slide[]>([]);
+  const [phase, setPhase] = useState<AppPhase>("home");
+  const [projects, setProjects] = useState<Project[]>(() => loadProjects());
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [designSystem, setDesignSystem] = useState<DesignSystem>(() => {
     const saved = localStorage.getItem("designSystem");
@@ -26,104 +61,164 @@ export default function App() {
     localStorage.setItem("designSystem", JSON.stringify(designSystem));
   }, [designSystem]);
 
-  const handleSetupComplete = (config: ProjectConfig) => {
-    setProjectConfig(config);
-
-    const colors = BUSINESS_COLORS[config.businessType];
-    if (colors) {
-      setDesignSystem((prev) => ({
-        ...prev,
-        colors: { ...prev.colors, primary: colors.primary, accent: colors.accent },
-      }));
+  // Auto-save project when it changes
+  useEffect(() => {
+    if (currentProject) {
+      saveProject(currentProject);
+      setProjects(loadProjects());
     }
+  }, [currentProject]);
 
-    const structure = SLIDE_STRUCTURES[config.slideType];
-    if (structure && structure.slides.length > 0) {
-      const initialSlides: Slide[] = structure.slides.map((def, i) => ({
-        id: `slide-${i}`,
-        content: `# ${def.name}\n\n内容を入力してください`,
-        title: def.name,
-        templateId: def.templateId,
-        slideType: config.slideType,
-      }));
-      setSlides(initialSlides);
-    } else {
-      setSlides([
-        {
-          id: "slide-0",
-          content: "# 新しいスライド\n\n内容を入力してください",
-          title: "新しいスライド",
-        },
-      ]);
-    }
-
+  const handleNew = () => {
+    const project = createNewProject("月次総会", "デフォルト");
+    setCurrentProject(project);
+    setDesignSystem(buildDesignSystem(DEFAULT_DESIGN_SYSTEMS[0], project.businessType));
     setCurrentSlideIndex(0);
     setPhase("editor");
   };
 
-  const handleSlideUpdate = (newContent: string) => {
-    setSlides((prev) => {
-      const updated = [...prev];
-      const titleMatch = newContent.match(/^#\s+(.+)$/m);
-      updated[currentSlideIndex] = {
-        ...updated[currentSlideIndex],
-        content: newContent,
-        title: titleMatch ? titleMatch[1] : updated[currentSlideIndex].title,
-      };
-      return updated;
+  const handleOpen = (project: Project) => {
+    setCurrentProject(project);
+    setDesignSystem(buildDesignSystem(DEFAULT_DESIGN_SYSTEMS[0], project.businessType));
+    setCurrentSlideIndex(0);
+    setPhase("editor");
+  };
+
+  const handleDelete = (id: string) => {
+    deleteProject(id);
+    setProjects(loadProjects());
+  };
+
+  const handleBack = () => {
+    setProjects(loadProjects());
+    setPhase("home");
+  };
+
+  const updateProject = useCallback((patch: Partial<Project>) => {
+    setCurrentProject((prev) => {
+      if (!prev) return prev;
+      return { ...prev, ...patch, updatedAt: new Date().toISOString() };
     });
+  }, []);
+
+  const handleNameChange = (name: string) => updateProject({ name });
+
+  const handleSlideTypeChange = (slideType: string) => {
+    updateProject({ slideType });
+  };
+
+  const handleBusinessTypeChange = (businessType: string) => {
+    updateProject({ businessType });
+    setDesignSystem(buildDesignSystem(designSystem, businessType));
+  };
+
+  const handleSlideUpdate = (newContent: string) => {
+    if (!currentProject) return;
+    const slides = [...currentProject.slides];
+    const titleMatch = newContent.match(/^#\s+(.+)$/m);
+    slides[currentSlideIndex] = {
+      ...slides[currentSlideIndex],
+      content: newContent,
+      title: titleMatch ? titleMatch[1] : slides[currentSlideIndex].title,
+    };
+    updateProject({ slides });
   };
 
   const handleAddSlide = () => {
+    if (!currentProject) return;
     const newSlide: Slide = {
       id: `slide-${Date.now()}`,
       content: "# 新しいスライド\n\n内容を入力してください",
       title: "新しいスライド",
     };
-    setSlides((prev) => {
-      const updated = [...prev];
-      updated.splice(currentSlideIndex + 1, 0, newSlide);
-      return updated;
-    });
+    const slides = [...currentProject.slides];
+    slides.splice(currentSlideIndex + 1, 0, newSlide);
+    updateProject({ slides });
     setCurrentSlideIndex(currentSlideIndex + 1);
   };
 
   const handleDeleteSlide = () => {
-    if (slides.length <= 1) return;
-    setSlides((prev) => prev.filter((_, i) => i !== currentSlideIndex));
-    setCurrentSlideIndex((prev) => Math.max(0, prev - 1));
+    if (!currentProject || currentProject.slides.length <= 1) return;
+    const slides = currentProject.slides.filter((_, i) => i !== currentSlideIndex);
+    updateProject({ slides });
+    setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1));
   };
 
   const handleExport = () => {
-    const markdown = slides.map((s) => s.content).join("\n\n---\n\n");
+    if (!currentProject) return;
+    const markdown = currentProject.slides.map((s) => s.content).join("\n\n---\n\n");
     const blob = new Blob([markdown], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${projectConfig?.name || "presentation"}.md`;
+    a.download = `${currentProject.name}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
-  if (phase === "setup") {
-    return <ProjectSetup onComplete={handleSetupComplete} />;
+  // Home
+  if (phase === "home") {
+    return (
+      <HomeScreen
+        projects={projects}
+        onNew={handleNew}
+        onOpen={handleOpen}
+        onDelete={handleDelete}
+      />
+    );
   }
+
+  // Editor
+  if (!currentProject) return null;
 
   return (
     <div className="size-full flex flex-col">
       {/* Header */}
-      <div className="border-b px-6 py-3 flex items-center justify-between bg-card shrink-0">
-        <div className="flex items-center gap-3">
-          <span className="font-semibold text-base">{projectConfig?.name}</span>
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
-            {projectConfig?.slideType}
-          </span>
-          <span className="text-xs text-muted-foreground">{slides.length}枚</span>
-        </div>
+      <div className="border-b px-4 py-2 flex items-center gap-3 bg-card shrink-0">
+        {/* Back */}
+        <button
+          onClick={handleBack}
+          className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
 
-        <div className="flex items-center gap-2">
+        {/* Title input - Google Slides style */}
+        <input
+          type="text"
+          value={currentProject.name}
+          onChange={(e) => handleNameChange(e.target.value)}
+          className="text-base font-semibold bg-transparent border-none outline-none focus:bg-muted/50 rounded px-2 py-1 min-w-0 w-56 transition-colors"
+          placeholder="無題のプレゼンテーション"
+        />
+
+        {/* Slide type dropdown */}
+        <select
+          value={currentProject.slideType}
+          onChange={(e) => handleSlideTypeChange(e.target.value)}
+          className="px-3 py-1.5 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+        >
+          {SLIDE_TYPES.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+
+        {/* Business type dropdown */}
+        <select
+          value={currentProject.businessType}
+          onChange={(e) => handleBusinessTypeChange(e.target.value)}
+          className="px-3 py-1.5 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+        >
+          {BUSINESS_TYPES.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+
+        <span className="text-xs text-muted-foreground ml-1">{currentProject.slides.length}枚</span>
+
+        <div className="ml-auto flex items-center gap-2">
           <DesignSystemSettings
             currentDesignSystem={designSystem}
             onDesignSystemChange={setDesignSystem}
@@ -132,18 +227,14 @@ export default function App() {
             <Download className="h-4 w-4 mr-2" />
             エクスポート
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setPhase("setup")}>
-            <Plus className="h-4 w-4 mr-2" />
-            新規作成
-          </Button>
         </div>
       </div>
 
-      {/* Main */}
+      {/* Main 3-column */}
       <div className="flex-1 flex overflow-hidden">
-        <div className="w-56 border-r p-3 shrink-0">
+        <div className="w-52 border-r p-3 shrink-0">
           <SlideThumbnails
-            slides={slides}
+            slides={currentProject.slides}
             currentSlideIndex={currentSlideIndex}
             onSlideSelect={setCurrentSlideIndex}
           />
@@ -151,19 +242,19 @@ export default function App() {
 
         <div className="flex-1 p-6 min-w-0">
           <SlideViewer
-            slides={slides}
+            slides={currentProject.slides}
             currentSlideIndex={currentSlideIndex}
             onSlideChange={setCurrentSlideIndex}
             designSystem={designSystem}
           />
         </div>
 
-        <div className="w-96 border-l p-4 shrink-0">
+        <div className="w-88 border-l p-4 shrink-0" style={{ width: "22rem" }}>
           <SlideEditPanel
-            currentSlide={slides[currentSlideIndex]}
+            currentSlide={currentProject.slides[currentSlideIndex]}
             onSlideUpdate={handleSlideUpdate}
             slideIndex={currentSlideIndex}
-            totalSlides={slides.length}
+            totalSlides={currentProject.slides.length}
             onAddSlide={handleAddSlide}
             onDeleteSlide={handleDeleteSlide}
           />
