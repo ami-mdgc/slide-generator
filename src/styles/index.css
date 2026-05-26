@@ -17,11 +17,12 @@
 }
 
 /*
- * @page MUST be at top level (not inside @media print) to be valid CSS.
- * A4 landscape = 297mm × 210mm, margin:0 removes browser headers/footers.
+ * @page MUST be at top level (not inside @media print).
+ * Page size = 1920×1080px — exactly matches the template design size.
+ * No scaling math needed.
  */
 @page {
-  size: A4 landscape;
+  size: 1920px 1080px;
   margin: 0;
 }
 
@@ -31,7 +32,7 @@
     display: none !important;
   }
 
-  /* Reset all hiding styles explicitly */
+  /* Reset all hiding styles */
   #pdf-print-layer {
     display: block !important;
     position: static !important;
@@ -44,42 +45,27 @@
     pointer-events: auto !important;
   }
 
-  /* One slide per printed page */
+  /* Each slide = exactly one 1920×1080 page */
   .pdf-slide-page {
-    width: 297mm;
-    height: 210mm;          /* A4 landscape height */
+    width: 1920px;
+    height: 1080px;
     overflow: hidden;
     page-break-after: always;
     break-after: page;
     position: relative;
   }
 
-  /*
-   * 16:9 wrapper centered vertically on A4 landscape.
-   * 297mm wide × 167.0625mm tall (= 297 × 9/16).
-   * Top margin = (210 - 167.0625) / 2 = 21.47mm
-   */
   .pdf-slide-wrapper {
-    width: 297mm;
-    height: 167.0625mm;
-    position: absolute;
-    top: 21.47mm;
-    left: 0;
-    overflow: hidden;
-  }
-
-  /*
-   * Scale 1920×1080 → 297mm × 167mm.
-   * 297mm = 1122.52px (96 CSS px/inch) → scale = 1122.52/1920 ≈ 0.5846
-   */
-  .pdf-slide-inner {
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 1920px;
     height: 1080px;
-    transform: scale(0.5846);
-    transform-origin: 0 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* No scaling needed — template is already 1920×1080 */
+  .pdf-slide-inner {
+    width: 1920px;
+    height: 1080px;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
