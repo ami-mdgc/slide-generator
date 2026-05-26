@@ -10,7 +10,7 @@ import { Project, loadProjects, saveProject, deleteProject } from "./types/proje
 import { SLIDE_STRUCTURES, BUSINESS_COLORS } from "./data/slide-structures";
 import { Button } from "./components/ui/button";
 import { Download, ChevronLeft, Presentation, Loader2 } from "lucide-react";
-import { exportToPDF } from "./utils/pdf-export";
+import { PDFExportLayer } from "./components/PDFExportLayer";
 
 type AppPhase = "home" | "editor";
 
@@ -170,14 +170,9 @@ export default function App() {
     setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1));
   };
 
-  const handleExport = async () => {
+  const handleExport = () => {
     if (!currentProject || isExporting) return;
     setIsExporting(true);
-    try {
-      await exportToPDF(currentProject.slides, currentProject.name, designSystem);
-    } finally {
-      setIsExporting(false);
-    }
   };
 
   // Home
@@ -291,6 +286,20 @@ export default function App() {
           />
         </div>
       </div>
+
+      {/* PDF export layer – rendered inside the React tree so all CSS applies */}
+      {isExporting && (
+        <PDFExportLayer
+          slides={currentProject.slides}
+          projectName={currentProject.name}
+          designSystem={designSystem}
+          onDone={() => setIsExporting(false)}
+          onError={(err) => {
+            console.error("PDF export error:", err);
+            setIsExporting(false);
+          }}
+        />
+      )}
     </div>
   );
 }
