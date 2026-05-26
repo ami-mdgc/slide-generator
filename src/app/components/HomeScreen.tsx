@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Plus, Trash2, FileText } from "lucide-react";
-import { Project, deleteProject } from "../types/project";
+import { Plus, Trash2, Calendar, Presentation } from "lucide-react";
+import { Project } from "../types/project";
 import { BUSINESS_COLORS } from "../data/slide-structures";
 import { cn } from "./ui/utils";
 
@@ -22,24 +22,38 @@ export function HomeScreen({ projects, onNew, onOpen, onDelete }: HomeScreenProp
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="border-b px-8 py-4 flex items-center justify-between">
-        <span className="font-semibold text-base">スライド生成</span>
-      </div>
+      <header className="bg-card border-b px-8 h-14 flex items-center gap-3 shrink-0">
+        <div className="w-7 h-7 rounded-md bg-[#FFDE35] flex items-center justify-center shrink-0">
+          <Presentation className="h-4 w-4 text-[#1A1A1A]" />
+        </div>
+        <span className="text-sm font-semibold tracking-tight">Slide Generator</span>
+      </header>
 
-      {/* Content */}
-      <div className="flex-1 px-8 py-10 max-w-6xl mx-auto w-full">
-        <h2 className="text-lg font-semibold mb-6">プレゼンテーション</h2>
-
-        <div className="grid grid-cols-4 gap-5">
-          {/* New button */}
+      {/* Main */}
+      <main className="flex-1 px-8 py-10 max-w-screen-xl mx-auto w-full">
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <h1 className="text-xl font-semibold">プレゼンテーション</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {projects.length > 0 ? `${projects.length}件` : "まだ作成されていません"}
+            </p>
+          </div>
           <button
             onClick={onNew}
-            className="flex flex-col gap-3 group"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#FFDE35] text-[#1A1A1A] text-sm font-medium rounded-lg hover:bg-[#F5D000] transition-colors"
           >
-            <div className="aspect-video border-2 border-dashed border-border rounded-lg flex items-center justify-center transition-colors group-hover:border-primary group-hover:bg-primary/5">
-              <Plus className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
+            <Plus className="h-4 w-4" />
+            新規作成
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+          {/* New card */}
+          <button onClick={onNew} className="flex flex-col gap-2.5 group">
+            <div className="aspect-[4/3] border-2 border-dashed border-border rounded-xl flex items-center justify-center transition-all group-hover:border-[#FFDE35] group-hover:bg-[#FFDE35]/8">
+              <Plus className="h-7 w-7 text-muted-foreground/50 group-hover:text-[#1A1A1A] transition-colors" />
             </div>
-            <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">新規作成</span>
+            <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors text-center">新規作成</span>
           </button>
 
           {/* Project cards */}
@@ -48,59 +62,61 @@ export function HomeScreen({ projects, onNew, onOpen, onDelete }: HomeScreenProp
             return (
               <div
                 key={project.id}
-                className="flex flex-col gap-3 group"
+                className="flex flex-col gap-2.5 group"
                 onMouseEnter={() => setHoveredId(project.id)}
                 onMouseLeave={() => setHoveredId(null)}
               >
-                <button
-                  onClick={() => onOpen(project)}
-                  className="aspect-video rounded-lg overflow-hidden border border-border relative shadow-sm hover:shadow-md transition-shadow"
-                >
-                  {/* Slide thumbnail preview */}
-                  <div
-                    className="absolute inset-0"
-                    style={{ backgroundColor: colors.primary + "12" }}
-                  />
-                  {/* Simulated slide content */}
-                  <div className="absolute inset-0 p-4 flex flex-col gap-2">
-                    <div
-                      className="h-2 rounded w-3/5"
-                      style={{ backgroundColor: colors.primary }}
-                    />
-                    <div className="h-1.5 rounded w-4/5 bg-current opacity-10" />
-                    <div className="h-1.5 rounded w-3/5 bg-current opacity-10" />
-                    <div className="h-1.5 rounded w-4/5 bg-current opacity-10" />
-                    <div className="mt-auto flex gap-1">
-                      {project.slides.slice(0, 5).map((_, i) => (
-                        <div
-                          key={i}
-                          className="flex-1 h-8 rounded"
-                          style={{ backgroundColor: colors.accent + "30" }}
-                        />
-                      ))}
+                <div className="relative">
+                  <button
+                    onClick={() => onOpen(project)}
+                    className="w-full aspect-[4/3] rounded-xl overflow-hidden border border-border relative bg-white shadow-sm transition-all hover:shadow-md hover:border-[#FFDE35]/60"
+                  >
+                    {/* Tinted background */}
+                    <div className="absolute inset-0" style={{ backgroundColor: colors.primary + "10" }} />
+                    {/* Left accent bar */}
+                    <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ backgroundColor: colors.primary }} />
+                    {/* Slide preview */}
+                    <div className="absolute inset-0 pl-4 pr-3 py-3 flex flex-col gap-1.5">
+                      <div className="h-2 rounded-full w-2/3" style={{ backgroundColor: colors.primary }} />
+                      <div className="h-1.5 rounded-full w-4/5 bg-black/8" />
+                      <div className="h-1.5 rounded-full w-3/5 bg-black/8" />
+                      <div className="mt-auto flex gap-1">
+                        {Array.from({ length: Math.min(project.slides.length, 6) }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="flex-1 h-5 rounded"
+                            style={{ backgroundColor: colors.accent + "35" }}
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </button>
+                  </button>
 
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{project.name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {project.slideType} · {formatDate(project.updatedAt)}
-                    </p>
-                  </div>
+                  {/* Delete button */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       onDelete(project.id);
                     }}
                     className={cn(
-                      "p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shrink-0",
-                      hoveredId === project.id ? "opacity-100" : "opacity-0"
+                      "absolute top-2 right-2 p-1.5 rounded-lg bg-white/90 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shadow-sm",
+                      hoveredId === project.id ? "opacity-100" : "opacity-0 pointer-events-none"
                     )}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3 w-3" />
                   </button>
+                </div>
+
+                <div className="px-0.5">
+                  <p className="text-sm font-medium truncate leading-snug">{project.name}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-xs text-muted-foreground">{project.slideType}</span>
+                    <span className="text-xs text-muted-foreground">·</span>
+                    <span className="text-xs text-muted-foreground inline-flex items-center gap-0.5">
+                      <Calendar className="h-3 w-3" />
+                      {formatDate(project.updatedAt)}
+                    </span>
+                  </div>
                 </div>
               </div>
             );
@@ -108,11 +124,22 @@ export function HomeScreen({ projects, onNew, onOpen, onDelete }: HomeScreenProp
         </div>
 
         {projects.length === 0 && (
-          <p className="text-sm text-muted-foreground mt-2 col-span-4">
-            まだプレゼンテーションがありません
-          </p>
+          <div className="mt-4 flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-[#FFDE35]/20 flex items-center justify-center mb-4">
+              <Presentation className="h-7 w-7 text-[#1A1A1A]/40" />
+            </div>
+            <p className="text-sm font-medium text-foreground">プレゼンテーションがありません</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-4">「新規作成」からはじめましょう</p>
+            <button
+              onClick={onNew}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#FFDE35] text-[#1A1A1A] text-sm font-medium rounded-lg hover:bg-[#F5D000] transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              新規作成
+            </button>
+          </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

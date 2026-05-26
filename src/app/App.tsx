@@ -9,7 +9,7 @@ import { DesignSystem, DEFAULT_DESIGN_SYSTEMS } from "./types/design-system";
 import { Project, loadProjects, saveProject, deleteProject } from "./types/project";
 import { SLIDE_STRUCTURES, BUSINESS_COLORS } from "./data/slide-structures";
 import { Button } from "./components/ui/button";
-import { Download, ChevronLeft } from "lucide-react";
+import { Download, ChevronLeft, Presentation } from "lucide-react";
 
 type AppPhase = "home" | "editor";
 
@@ -201,6 +201,11 @@ export default function App() {
     <div className="size-full flex flex-col">
       {/* Header */}
       <div className="border-b px-4 py-2 flex items-center gap-3 bg-card shrink-0">
+        {/* Logo mark */}
+        <div className="w-7 h-7 rounded-md bg-[#FFDE35] flex items-center justify-center shrink-0">
+          <Presentation className="h-4 w-4 text-[#1A1A1A]" />
+        </div>
+        <div className="w-px h-5 bg-border shrink-0" />
         {/* Back */}
         <button
           onClick={handleBack}
