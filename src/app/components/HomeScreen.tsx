@@ -23,8 +23,8 @@ export function HomeScreen({ projects, onNew, onOpen, onDelete }: HomeScreenProp
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="bg-card border-b px-8 h-14 flex items-center gap-3 shrink-0">
-        <div className="w-7 h-7 rounded-md bg-[#FFDE35] flex items-center justify-center shrink-0">
-          <Presentation className="h-4 w-4 text-[#1A1A1A]" />
+        <div className="w-7 h-7 rounded-md bg-[#1A1A1A] flex items-center justify-center shrink-0">
+          <Presentation className="h-4 w-4 text-white" />
         </div>
         <span className="text-sm font-semibold tracking-tight">Slide Generator</span>
       </header>
@@ -40,7 +40,7 @@ export function HomeScreen({ projects, onNew, onOpen, onDelete }: HomeScreenProp
           </div>
           <button
             onClick={onNew}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#FFDE35] text-[#1A1A1A] text-sm font-medium rounded-lg hover:bg-[#F5D000] transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#1A1A1A] text-white text-sm font-medium rounded-lg hover:bg-[#333333] transition-colors"
           >
             <Plus className="h-4 w-4" />
             新規作成
@@ -50,15 +50,15 @@ export function HomeScreen({ projects, onNew, onOpen, onDelete }: HomeScreenProp
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
           {/* New card */}
           <button onClick={onNew} className="flex flex-col gap-2.5 group">
-            <div className="aspect-[4/3] border-2 border-dashed border-border rounded-xl flex items-center justify-center transition-all group-hover:border-[#FFDE35] group-hover:bg-[#FFDE35]/8">
-              <Plus className="h-7 w-7 text-muted-foreground/50 group-hover:text-[#1A1A1A] transition-colors" />
+            <div className="aspect-[4/3] border-2 border-dashed border-border rounded-xl flex items-center justify-center transition-all group-hover:border-[#1A1A1A] group-hover:bg-[#1A1A1A]/8">
+              <Plus className="h-7 w-7 text-muted-foreground/50 group-hover:text-white transition-colors" />
             </div>
             <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors text-center">新規作成</span>
           </button>
 
           {/* Project cards */}
           {projects.map((project) => {
-            const colors = BUSINESS_COLORS[project.businessType] ?? BUSINESS_COLORS["デフォルト"];
+            const colors = BUSINESS_COLORS[project.businessType] ?? Object.values(BUSINESS_COLORS)[0];
             return (
               <div
                 key={project.id}
@@ -69,7 +69,7 @@ export function HomeScreen({ projects, onNew, onOpen, onDelete }: HomeScreenProp
                 <div className="relative">
                   <button
                     onClick={() => onOpen(project)}
-                    className="w-full aspect-[4/3] rounded-xl overflow-hidden border border-border relative bg-white shadow-sm transition-all hover:shadow-md hover:border-[#FFDE35]/60"
+                    className="w-full aspect-[4/3] rounded-xl overflow-hidden border border-border relative bg-white shadow-sm transition-all hover:shadow-md hover:border-[#1A1A1A]/60"
                   >
                     {/* Tinted background */}
                     <div className="absolute inset-0" style={{ backgroundColor: colors.primary + "10" }} />
@@ -125,14 +125,14 @@ export function HomeScreen({ projects, onNew, onOpen, onDelete }: HomeScreenProp
 
         {projects.length === 0 && (
           <div className="mt-4 flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-[#FFDE35]/20 flex items-center justify-center mb-4">
-              <Presentation className="h-7 w-7 text-[#1A1A1A]/40" />
+            <div className="w-14 h-14 rounded-2xl bg-[#1A1A1A]/20 flex items-center justify-center mb-4">
+              <Presentation className="h-7 w-7 text-white/40" />
             </div>
             <p className="text-sm font-medium text-foreground">プレゼンテーションがありません</p>
             <p className="text-xs text-muted-foreground mt-1 mb-4">「新規作成」からはじめましょう</p>
             <button
               onClick={onNew}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#FFDE35] text-[#1A1A1A] text-sm font-medium rounded-lg hover:bg-[#F5D000] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#1A1A1A] text-white text-sm font-medium rounded-lg hover:bg-[#333333] transition-colors"
             >
               <Plus className="h-4 w-4" />
               新規作成

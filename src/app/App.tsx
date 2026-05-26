@@ -4,12 +4,12 @@ import { SlideThumbnails } from "./components/SlideThumbnails";
 import { SlideEditPanel } from "./components/SlideEditPanel";
 import { DesignSystemSettings } from "./components/DesignSystemSettings";
 import { HomeScreen } from "./components/HomeScreen";
-import { Slide } from "./utils/markdown-parser";
+import { Slide, parseMarkdownToSlides } from "./utils/markdown-parser";
 import { DesignSystem, DEFAULT_DESIGN_SYSTEMS } from "./types/design-system";
 import { Project, loadProjects, saveProject, deleteProject } from "./types/project";
 import { SLIDE_STRUCTURES, BUSINESS_COLORS } from "./data/slide-structures";
 import { Button } from "./components/ui/button";
-import { Download, ChevronLeft, Presentation, Loader2 } from "lucide-react";
+import { Download, ChevronLeft, Presentation, Loader2, FileDown } from "lucide-react";
 import { PDFExportLayer } from "./components/PDFExportLayer";
 
 type AppPhase = "home" | "editor";
@@ -86,7 +86,7 @@ export default function App() {
   }, [currentProject]);
 
   const handleNew = () => {
-    const project = createNewProject("月次総会", "デフォルト");
+    const project = createNewProject("月次総会", BUSINESS_TYPES[0]);
     setCurrentProject(project);
     setDesignSystem(buildDesignSystem(DEFAULT_DESIGN_SYSTEMS[0], project.businessType));
     setCurrentSlideIndex(0);
@@ -170,6 +170,19 @@ export default function App() {
     setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1));
   };
 
+  const handleBulkUpdate = useCallback((markdown: string) => {
+    if (!currentProject) return;
+    const parsed = parseMarkdownToSlides(markdown);
+    if (parsed.length === 0) return;
+    const slides: Slide[] = parsed.map((slide, i) => ({
+      ...slide,
+      id: currentProject.slides[i]?.id || slide.id,
+      templateId: currentProject.slides[i]?.templateId || slide.templateId,
+    }));
+    updateProject({ slides });
+    setCurrentSlideIndex(0);
+  }, [currentProject, updateProject]);
+
   const handleExport = () => {
     if (!currentProject || isExporting) return;
     setIsExporting(true);
@@ -195,8 +208,8 @@ export default function App() {
       {/* Header */}
       <div className="border-b px-4 py-2 flex items-center gap-3 bg-card shrink-0">
         {/* Logo mark */}
-        <div className="w-7 h-7 rounded-md bg-[#FFDE35] flex items-center justify-center shrink-0">
-          <Presentation className="h-4 w-4 text-[#1A1A1A]" />
+        <div className="w-7 h-7 rounded-md bg-[#1A1A1A] flex items-center justify-center shrink-0">
+          <Presentation className="h-4 w-4 text-white" />
         </div>
         <div className="w-px h-5 bg-border shrink-0" />
         {/* Back */}
@@ -278,7 +291,9 @@ export default function App() {
         <div className="w-88 border-l p-4 shrink-0" style={{ width: "22rem" }}>
           <SlideEditPanel
             currentSlide={currentProject.slides[currentSlideIndex]}
+            allSlides={currentProject.slides}
             onSlideUpdate={handleSlideUpdate}
+            onBulkUpdate={handleBulkUpdate}
             slideIndex={currentSlideIndex}
             totalSlides={currentProject.slides.length}
             onAddSlide={handleAddSlide}
@@ -287,18 +302,34 @@ export default function App() {
         </div>
       </div>
 
-      {/* PDF export layer – rendered inside the React tree so all CSS applies */}
+      {/* PDF export layer */}
       {isExporting && (
-        <PDFExportLayer
-          slides={currentProject.slides}
-          projectName={currentProject.name}
-          designSystem={designSystem}
-          onDone={() => setIsExporting(false)}
-          onError={(err) => {
-            console.error("PDF export error:", err);
-            setIsExporting(false);
-          }}
-        />
+        <>
+          {/* Loading overlay — covers the slide being captured (z-index: 10) */}
+          <div
+            style={{ zIndex: 50 }}
+            className="fixed inset-0 bg-black/60 flex flex-col items-center justify-center gap-4"
+          >
+            <div className="bg-card rounded-xl px-8 py-6 flex flex-col items-center gap-3 shadow-2xl">
+              <FileDown className="h-8 w-8 text-primary animate-bounce" />
+              <p className="text-base font-semibold">PDFを生成中...</p>
+              <p className="text-sm text-muted-foreground">
+                {currentProject.slides.length}枚のスライドを書き出しています
+              </p>
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          </div>
+          <PDFExportLayer
+            slides={currentProject.slides}
+            projectName={currentProject.name}
+            designSystem={designSystem}
+            onDone={() => setIsExporting(false)}
+            onError={(err) => {
+              console.error("PDF export error:", err);
+              setIsExporting(false);
+            }}
+          />
+        </>
       )}
     </div>
   );

@@ -215,8 +215,9 @@ export const SLIDE_STRUCTURES: Record<string, SlideStructure> = {
 };
 
 export const BUSINESS_COLORS: Record<string, { primary: string; accent: string }> = {
-  デフォルト: { primary: "#1e40af", accent: "#3b82f6" },
-  事業A:     { primary: "#1e40af", accent: "#3b82f6" },
-  事業B:     { primary: "#7c3aed", accent: "#a78bfa" },
-  事業C:     { primary: "#059669", accent: "#10b981" },
+  不用品回収の窓口: { primary: "#FFDE35", accent: "#4ABFD7" },
+  みんなの買取:     { primary: "#5969a7", accent: "#5969a7" },
+  おそうじ合衆国:   { primary: "#059669", accent: "#10b981" },
+  "gaiheki+":       { primary: "#BB8DBE", accent: "#46C3E6" },
+  解体相談所:       { primary: "#FF5C25", accent: "#FF5C25" },
 };

@@ -113,14 +113,19 @@ export function parseTemplate02Data(slide: Slide, content: string): SlideTemplat
     const heading = match[1].trim();
     const sectionContent = match[2];
 
-    const items = sectionContent
-      .split('\n')
-      .filter(line => line.trim().startsWith('-') || line.trim().startsWith('*'))
-      .map(line => line.replace(/^[-*]\s+/, '').trim());
+    const lines = sectionContent.split('\n');
+    const subheadingMatch = lines.find(line => /^\*\*(.+)\*\*$/.test(line.trim()));
+    const subheading = subheadingMatch
+      ? subheadingMatch.trim().replace(/^\*\*|\*\*$/g, '')
+      : '';
+
+    const items = lines
+      .filter(line => line.trim().startsWith('-'))
+      .map(line => line.replace(/^[-]\s+/, '').trim());
 
     sections.push({
       heading: heading,
-      subheading: '小見出し',
+      subheading,
       items: items.length > 0 ? items : ['テキストテキストテキスト'],
     });
   }
@@ -140,10 +145,10 @@ export function parseTemplate03Data(slide: Slide, content: string): SlideTemplat
   const titleMatch = content.match(/^#\s+(.+)$/m);
   const title = titleMatch ? titleMatch[1] : slide.title || '';
 
-  const themeMatch = content.match(/##\s*テーマ\s*\n(.+)/);
+  const themeMatch = content.match(/##\s*テーマ\s*\n([\s\S]+?)(?=\n##|$)/);
   const theme = {
-    label: '事業粗利',
-    text: themeMatch ? themeMatch[1].trim().replace(/[「」]/g, '') : '粗利達成のための当月開始',
+    label: '今月のテーマ',
+    text: themeMatch ? themeMatch[1].trim().replace(/[「」]/g, '') : '',
   };
 
   const metrics: { label: string; value: string; reference: string }[] = [];
@@ -200,52 +205,36 @@ export function parseTemplate04Data(slide: Slide, content: string): SlideTemplat
     }
 
     initiatives.push({
-      smallHeading: `小見出し${sectionIndex + 1}`,
+      smallHeading: `施策${sectionIndex + 1}`,
       heading: heading,
       items,
     });
     sectionIndex++;
   }
 
-  while (initiatives.length < 3) {
-    initiatives.push({
-      smallHeading: '小見出し',
-      heading: '中見出し',
-      items: [
-        { label: '背景', text: 'テキストテキストテキスト' },
-        { label: '打ち手', text: 'テキストテキストテキスト' },
-        { label: '狙い', text: 'テキストテキストテキスト' },
-      ],
-    });
-  }
-
-  return { title, initiatives: initiatives.slice(0, 3) };
+  return { title, initiatives };
 }
 
 export function parseTemplate05Data(slide: Slide, content: string): SlideTemplateData {
   const titleMatch = content.match(/^#\s+(.+)$/m);
   const title = titleMatch ? titleMatch[1] : slide.title || '';
 
-  const subtitleMatch = content.match(/##\s+(.+)$/m);
-  const subtitle = subtitleMatch ? subtitleMatch[1] : '';
+  const sections: { heading: string; items: string[] }[] = [];
+  const blocks = content.split(/^(?=\*\*)/m);
 
-  const sections: { heading: string; text: string }[] = [];
-  const sectionMatches = content.matchAll(/[-*]\s+\*\*(.+?)\*\*[:：]?\s*(.+)/g);
-
-  for (const match of sectionMatches) {
-    sections.push({
-      heading: match[1].trim(),
-      text: match[2].trim(),
-    });
+  for (const block of blocks) {
+    const headingMatch = block.match(/^\*\*(.+?)\*\*/);
+    if (!headingMatch) continue;
+    const heading = headingMatch[1].trim();
+    const items = block
+      .split('\n')
+      .filter(line => line.trim().startsWith('-'))
+      .map(line => line.replace(/^-\s*/, '').trim())
+      .filter(Boolean);
+    sections.push({ heading, items });
   }
 
-  if (sections.length === 0) {
-    sections.push({ heading: '背景', text: 'テキストテキストテキスト' });
-    sections.push({ heading: '進め方', text: 'テキストテキストテキスト' });
-    sections.push({ heading: '期待する効果', text: 'テキストテキストテキスト' });
-  }
-
-  return { title, subtitle, sections };
+  return { title, sections };
 }
 
 export function parseTemplateCoverData(slide: Slide, content: string): SlideTemplateData {
@@ -259,25 +248,28 @@ export function parseTemplateCoverData(slide: Slide, content: string): SlideTemp
   return { title, subtitle, date };
 }
 
-export function parseTemplateData(templateId: string, slide: Slide, content: string): SlideTemplateData {
+export function parseTemplateData(
+  templateId: string,
+  slide: Slide,
+  content: string,
+  colors?: { accent: string; primary: string }
+): SlideTemplateData {
+  const c = colors || { accent: '#c4ab46', primary: '#5969a7' };
+
   switch (templateId) {
     case 'templateCover':
-      return parseTemplateCoverData(slide, content);
+      return { ...parseTemplateCoverData(slide, content), colors: c };
     case 'template01':
-      return parseTemplate01Data(slide, content);
+      return { ...parseTemplate01Data(slide, content), colors: c };
     case 'template02':
-      return parseTemplate02Data(slide, content);
+      return { ...parseTemplate02Data(slide, content), colors: c };
     case 'template03':
-      return parseTemplate03Data(slide, content);
+      return { ...parseTemplate03Data(slide, content), colors: c };
     case 'template04':
-      return parseTemplate04Data(slide, content);
+      return { ...parseTemplate04Data(slide, content), colors: c };
     case 'template05':
-      return parseTemplate05Data(slide, content);
-
+      return { ...parseTemplate05Data(slide, content), colors: c };
     default:
-      return {
-        title: slide.title || '',
-        content: content,
-      };
+      return { title: slide.title || '', content, colors: c };
   }
 }

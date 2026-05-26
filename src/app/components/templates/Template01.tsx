@@ -12,18 +12,14 @@ interface Template01Data extends SlideTemplateData {
     value: string;
     reference?: string;
   }[];
+  colors?: { accent: string; primary: string };
 }
 
-interface ContainerProps {
-  icon?: string;
-  text: string;
-}
-
-function Container({ icon, text }: ContainerProps) {
+function Container({ text, primary }: { text: string; primary: string }) {
   return (
     <div className="content-stretch flex gap-[20px] h-[44px] items-center relative shrink-0 w-full" data-name="Container">
       <div className="relative shrink-0 size-[24px]" data-name="Icon">
-        <div className="absolute bg-[#5969a7] inset-0" />
+        <div className="absolute inset-0" style={{ backgroundColor: primary }} />
       </div>
       <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#18191e] text-[36px] whitespace-normal">
         {text}
@@ -32,19 +28,13 @@ function Container({ icon, text }: ContainerProps) {
   );
 }
 
-interface MetricCardProps {
-  label: string;
-  value: string;
-  reference?: string;
-}
-
-function MetricCard({ label, value, reference }: MetricCardProps) {
+function MetricCard({ label, value, reference, accent }: { label: string; value: string; reference?: string; accent: string }) {
   return (
     <div className="bg-[#f5f5f5] flex-[1_0_0] min-w-px relative">
       <div className="flex flex-col items-center size-full">
         <div className="content-stretch flex flex-col gap-[38px] items-center px-[40px] py-[48px] relative size-full">
           <div className="[word-break:break-word] content-stretch flex flex-col font-['Gen_Interface_JP_Display:SemiBold',sans-serif] gap-[16px] items-center leading-[normal] not-italic relative shrink-0 whitespace-nowrap">
-            <p className="relative shrink-0 text-[#c4ab46] text-[36px]">{label}</p>
+            <p className="relative shrink-0 text-[36px]" style={{ color: accent }}>{label}</p>
             <p className="relative shrink-0 text-[#18191e] text-[72px]">{value}</p>
           </div>
           {reference && (
@@ -68,6 +58,9 @@ function MetricCard({ label, value, reference }: MetricCardProps) {
 }
 
 export default function Template01({ data }: { data: Template01Data }) {
+  const accent = data.colors?.accent || '#c4ab46';
+  const primary = data.colors?.primary || '#5969a7';
+
   return (
     <div className="bg-white relative size-full" data-name="template01">
       <div className="absolute h-[77px] left-[96px] top-[96px] w-[920px]" data-name="Heading1">
@@ -79,7 +72,7 @@ export default function Template01({ data }: { data: Template01Data }) {
       {/* Summary section */}
       <div className="absolute bg-[#f5f5f5] content-stretch flex flex-col gap-[32px] items-start left-[96px] p-[64px] top-[227px] w-[1728px]" data-name="summary">
         {data.summaryItems.map((item, index) => (
-          <Container key={index} icon={item.icon} text={item.text} />
+          <Container key={index} text={item.text} primary={primary} />
         ))}
       </div>
 
@@ -91,6 +84,7 @@ export default function Template01({ data }: { data: Template01Data }) {
             label={metric.label}
             value={metric.value}
             reference={metric.reference}
+            accent={accent}
           />
         ))}
       </div>

@@ -1,260 +1,189 @@
 import { useState } from "react";
-import { Button } from "./ui/button";
-import { Card } from "./ui/card";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "./ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Palette, Settings } from "lucide-react";
-import { DesignSystem, DEFAULT_DESIGN_SYSTEMS } from "../types/design-system";
+import { Palette, Settings, ArrowLeft } from "lucide-react";
+import { DesignSystem } from "../types/design-system";
+import { BUSINESS_COLORS } from "../data/slide-structures";
 import { cn } from "./ui/utils";
+
+const buildPresets = (): DesignSystem[] =>
+  Object.entries(BUSINESS_COLORS).map(([name, colors]) => ({
+    id: name,
+    name,
+    colors: {
+      primary: colors.primary,
+      secondary: colors.primary,
+      background: "#ffffff",
+      text: "#18191e",
+      accent: colors.accent,
+    },
+    fonts: { heading: "system-ui, sans-serif", body: "system-ui, sans-serif" },
+    layout: { titleAlignment: "left", contentPadding: "normal" },
+  }));
 
 interface DesignSystemSettingsProps {
   currentDesignSystem: DesignSystem;
   onDesignSystemChange: (designSystem: DesignSystem) => void;
 }
 
+type View = "presets" | "edit";
+
 export function DesignSystemSettings({ currentDesignSystem, onDesignSystemChange }: DesignSystemSettingsProps) {
-  const [customSystem, setCustomSystem] = useState<DesignSystem>(currentDesignSystem);
   const [isOpen, setIsOpen] = useState(false);
+  const [view, setView] = useState<View>("presets");
+  const [presets, setPresets] = useState<DesignSystem[]>(buildPresets);
+  const [editTarget, setEditTarget] = useState<DesignSystem | null>(null);
 
   const handlePresetSelect = (preset: DesignSystem) => {
-    setCustomSystem(preset);
     onDesignSystemChange(preset);
   };
 
-  const handleColorChange = (key: keyof DesignSystem["colors"], value: string) => {
-    const updated = {
-      ...customSystem,
-      colors: {
-        ...customSystem.colors,
-        [key]: value,
-      },
-    };
-    setCustomSystem(updated);
+  const handleEditOpen = () => {
+    setEditTarget({ ...currentDesignSystem });
+    setView("edit");
   };
 
-  const handleApplyCustom = () => {
-    onDesignSystemChange(customSystem);
-    setIsOpen(false);
+  const handleEditColorChange = (key: "primary" | "accent", value: string) => {
+    if (!editTarget) return;
+    setEditTarget({
+      ...editTarget,
+      colors: { ...editTarget.colors, [key]: value, secondary: key === "primary" ? value : editTarget.colors.secondary },
+    });
+  };
+
+  const handleEditSave = () => {
+    if (!editTarget) return;
+    const updated = presets.map((p) => (p.id === editTarget.id ? editTarget : p));
+    setPresets(updated);
+    onDesignSystemChange(editTarget);
+    setView("presets");
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setView("presets"); }}>
       <DialogTrigger asChild>
-        <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3">
+        <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3">
           <Palette className="h-4 w-4" />
           デザイン設定
         </button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
-        <DialogHeader>
-          <DialogTitle>デザインシステム設定</DialogTitle>
-          <DialogDescription>
-            プリセットから選択するか、カスタムでデザインシステムを設定します
-          </DialogDescription>
-        </DialogHeader>
 
-        <Tabs defaultValue="presets" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="presets">プリセット</TabsTrigger>
-            <TabsTrigger value="custom">カスタム設定</TabsTrigger>
-          </TabsList>
+      <DialogContent className="p-0 overflow-hidden" style={{ width: 580, height: 518, maxWidth: "none" }}>
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="px-6 py-4 border-b shrink-0">
+            <div className="flex items-center gap-2">
+              {view === "edit" && (
+                <button onClick={() => setView("presets")} className="p-1 rounded hover:bg-muted transition-colors">
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+              )}
+              <DialogTitle className="text-base font-semibold">
+                {view === "presets" ? "デザイン設定" : `${editTarget?.name} のカラー編集`}
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+              {view === "presets" ? "事業ごとのブランドカラーを選択してください" : "プライマリとアクセントカラーを編集できます"}
+            </DialogDescription>
+          </div>
 
-          <TabsContent value="presets" className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              プリセットからデザインテーマを選択してください
-            </p>
+          {/* Body */}
+          <div className="flex-1 overflow-auto px-6 py-5">
+            {view === "presets" && (
+              <div className="grid grid-cols-2 gap-3">
+                {presets.map((preset) => (
+                  <button
+                    key={preset.id}
+                    onClick={() => handlePresetSelect(preset)}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg border text-left transition-all hover:border-primary",
+                      currentDesignSystem.id === preset.id && "border-primary border-2 bg-primary/5"
+                    )}
+                  >
+                    <div className="flex gap-1.5 shrink-0">
+                      <div className="w-6 h-6 rounded-full border border-black/10" style={{ backgroundColor: preset.colors.primary }} />
+                      <div className="w-6 h-6 rounded-full border border-black/10" style={{ backgroundColor: preset.colors.accent }} />
+                    </div>
+                    <span className="text-sm font-medium truncate">{preset.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
-            <div className="grid grid-cols-2 gap-4">
-              {DEFAULT_DESIGN_SYSTEMS.map((preset) => (
-                <Card
-                  key={preset.id}
-                  className={cn(
-                    "p-4 cursor-pointer transition-all hover:border-primary",
-                    currentDesignSystem.id === preset.id && "border-primary border-2"
-                  )}
-                  onClick={() => handlePresetSelect(preset)}
+            {view === "edit" && editTarget && (
+              <div className="space-y-5">
+                {/* Preset selector */}
+                <div className="flex gap-2 flex-wrap">
+                  {presets.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setEditTarget({ ...p })}
+                      className={cn(
+                        "px-3 py-1.5 text-xs rounded-full border transition-colors",
+                        editTarget.id === p.id ? "border-primary bg-primary/10 font-medium" : "border-border hover:border-primary/50"
+                      )}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Color inputs */}
+                <div className="space-y-3">
+                  {(["primary", "accent"] as const).map((key) => (
+                    <div key={key} className="flex items-center gap-3">
+                      <label className="text-sm w-32 shrink-0 text-muted-foreground">
+                        {key === "primary" ? "プライマリ" : "アクセント"}
+                      </label>
+                      <input
+                        type="color"
+                        value={editTarget.colors[key]}
+                        onChange={(e) => handleEditColorChange(key, e.target.value)}
+                        className="w-10 h-10 rounded cursor-pointer border border-border"
+                      />
+                      <input
+                        type="text"
+                        value={editTarget.colors[key]}
+                        onChange={(e) => handleEditColorChange(key, e.target.value)}
+                        className="flex-1 px-3 py-2 text-sm border rounded-md font-mono bg-background"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t shrink-0 flex justify-between items-center">
+            {view === "presets" ? (
+              <>
+                <span />
+                <button
+                  onClick={handleEditOpen}
+                  className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  title="カラーを編集"
                 >
-                  <h4 className="mb-3">{preset.name}</h4>
-
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <div
-                        className="w-8 h-8 rounded border"
-                        style={{ backgroundColor: preset.colors.primary }}
-                      />
-                      <div
-                        className="w-8 h-8 rounded border"
-                        style={{ backgroundColor: preset.colors.secondary }}
-                      />
-                      <div
-                        className="w-8 h-8 rounded border"
-                        style={{ backgroundColor: preset.colors.accent }}
-                      />
-                    </div>
-
-                    <div className="text-xs text-muted-foreground">
-                      <p>配置: {preset.layout.titleAlignment === "left" ? "左揃え" : preset.layout.titleAlignment === "center" ? "中央揃え" : "右揃え"}</p>
-                      <p>余白: {preset.layout.contentPadding === "compact" ? "コンパクト" : preset.layout.contentPadding === "normal" ? "標準" : "広め"}</p>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="custom" className="space-y-6">
-            <div className="space-y-4">
-              <div>
-                <h4 className="mb-3">カラー設定</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>プライマリーカラー</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="color"
-                        value={customSystem.colors.primary}
-                        onChange={(e) => handleColorChange("primary", e.target.value)}
-                        className="w-16 h-10"
-                      />
-                      <Input
-                        type="text"
-                        value={customSystem.colors.primary}
-                        onChange={(e) => handleColorChange("primary", e.target.value)}
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>セカンダリーカラー</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="color"
-                        value={customSystem.colors.secondary}
-                        onChange={(e) => handleColorChange("secondary", e.target.value)}
-                        className="w-16 h-10"
-                      />
-                      <Input
-                        type="text"
-                        value={customSystem.colors.secondary}
-                        onChange={(e) => handleColorChange("secondary", e.target.value)}
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>背景色</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="color"
-                        value={customSystem.colors.background}
-                        onChange={(e) => handleColorChange("background", e.target.value)}
-                        className="w-16 h-10"
-                      />
-                      <Input
-                        type="text"
-                        value={customSystem.colors.background}
-                        onChange={(e) => handleColorChange("background", e.target.value)}
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>テキストカラー</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="color"
-                        value={customSystem.colors.text}
-                        onChange={(e) => handleColorChange("text", e.target.value)}
-                        className="w-16 h-10"
-                      />
-                      <Input
-                        type="text"
-                        value={customSystem.colors.text}
-                        onChange={(e) => handleColorChange("text", e.target.value)}
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>アクセントカラー</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="color"
-                        value={customSystem.colors.accent}
-                        onChange={(e) => handleColorChange("accent", e.target.value)}
-                        className="w-16 h-10"
-                      />
-                      <Input
-                        type="text"
-                        value={customSystem.colors.accent}
-                        onChange={(e) => handleColorChange("accent", e.target.value)}
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="mb-3">レイアウト設定</h4>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>タイトル配置</Label>
-                    <div className="flex gap-2">
-                      {(["left", "center", "right"] as const).map((alignment) => (
-                        <Button
-                          key={alignment}
-                          variant={customSystem.layout.titleAlignment === alignment ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setCustomSystem({
-                            ...customSystem,
-                            layout: { ...customSystem.layout, titleAlignment: alignment }
-                          })}
-                        >
-                          {alignment === "left" ? "左揃え" : alignment === "center" ? "中央揃え" : "右揃え"}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>余白サイズ</Label>
-                    <div className="flex gap-2">
-                      {(["compact", "normal", "spacious"] as const).map((padding) => (
-                        <Button
-                          key={padding}
-                          variant={customSystem.layout.contentPadding === padding ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setCustomSystem({
-                            ...customSystem,
-                            layout: { ...customSystem.layout, contentPadding: padding }
-                          })}
-                        >
-                          {padding === "compact" ? "コンパクト" : padding === "normal" ? "標準" : "広め"}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button variant="outline" onClick={() => setIsOpen(false)}>
-                キャンセル
-              </Button>
-              <Button onClick={handleApplyCustom}>
-                適用
-              </Button>
-            </div>
-          </TabsContent>
-        </Tabs>
+                  <Settings className="h-4 w-4" />
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setView("presets")}
+                  className="px-4 py-2 text-sm rounded-md border hover:bg-muted transition-colors"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={handleEditSave}
+                  className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  保存
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

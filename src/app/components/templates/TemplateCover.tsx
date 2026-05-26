@@ -4,24 +4,23 @@ interface TemplateCoverData extends SlideTemplateData {
   title: string;
   subtitle?: string;
   date?: string;
+  colors?: { accent: string; primary: string };
 }
 
 export default function TemplateCover({ data }: { data: TemplateCoverData }) {
+  const accent = data.colors?.accent || '#c4ab46';
+  const primary = data.colors?.primary || '#5969a7';
+
   return (
     <div className="bg-white relative size-full overflow-hidden" data-name="templateCover">
       {/* Left accent bar */}
-      <div className="absolute left-0 top-0 bottom-0 w-[10px] bg-[#5969a7]" />
+      <div className="absolute left-0 top-0 bottom-0 w-[10px]" style={{ backgroundColor: primary }} />
 
-      {/* Top decorative block */}
-      <div className="absolute top-0 right-0 w-[640px] h-[420px] bg-[#f5f5f5]" />
-
-      {/* Inner accent square */}
-      <div className="absolute top-[64px] right-[64px] w-[160px] h-[160px] bg-[#5969a7] opacity-10" />
 
       {/* Main content */}
       <div className="absolute inset-0 flex flex-col justify-center pl-[96px] pr-[480px]">
         {data.subtitle && (
-          <p className="font-['Gen_Interface_JP_Display:SemiBold',sans-serif] text-[#c4ab46] text-[36px] leading-normal mb-[40px] not-italic">
+          <p className="font-['Gen_Interface_JP_Display:SemiBold',sans-serif] text-[36px] leading-normal mb-[16px] not-italic" style={{ color: accent }}>
             {data.subtitle}
           </p>
         )}

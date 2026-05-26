@@ -10,9 +10,12 @@ interface Template04Data extends SlideTemplateData {
       text: string;
     }[];
   }[];
+  colors?: { accent: string; primary: string };
 }
 
 export default function Template04({ data }: { data: Template04Data }) {
+  const accent = data.colors?.accent || '#c4ab46';
+
   return (
     <div className="bg-white relative size-full" data-name="template04">
       <div className="absolute content-stretch flex items-center justify-center left-[96px] top-[88px]" data-name="Heading1">
@@ -29,7 +32,7 @@ export default function Template04({ data }: { data: Template04Data }) {
                 <p className="font-['Gen_Interface_JP_Display:Bold',sans-serif] leading-[1.5] relative shrink-0 text-[#18191e] text-[24px]">
                   {initiative.smallHeading}
                 </p>
-                <p className="font-['Gen_Interface_JP_Display:SemiBold',sans-serif] leading-[normal] relative shrink-0 text-[#c4ab46] text-[36px]">
+                <p className="font-['Gen_Interface_JP_Display:SemiBold',sans-serif] leading-[normal] relative shrink-0 text-[36px]" style={{ color: accent }}>
                   {initiative.heading}
                 </p>
               </div>
@@ -40,7 +43,7 @@ export default function Template04({ data }: { data: Template04Data }) {
                     <p className="font-['Gen_Interface_JP_Display:Bold',sans-serif] leading-[1.5] relative shrink-0 text-[28px] whitespace-nowrap">
                       {item.label}
                     </p>
-                    <p className="font-['Gen_Interface_JP_Display:Regular',sans-serif] leading-[1.5] min-w-full relative shrink-0 text-[32px]">
+                    <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Regular',sans-serif] leading-[1.5] relative text-[32px] w-full">
                       {item.text}
                     </p>
                   </div>

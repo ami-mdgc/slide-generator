@@ -95,7 +95,8 @@ export function SlideViewer({ slides, currentSlideIndex, onSlideChange, designSy
     const data = parseTemplateData(
       currentSlide.templateId,
       currentSlide,
-      currentSlide.content
+      currentSlide.content,
+      { accent: designSystem.colors.accent, primary: designSystem.colors.primary }
     );
 
     return <TemplateComponent data={data} />;
