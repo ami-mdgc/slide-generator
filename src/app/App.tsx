@@ -9,7 +9,8 @@ import { DesignSystem, DEFAULT_DESIGN_SYSTEMS } from "./types/design-system";
 import { Project, loadProjects, saveProject, deleteProject } from "./types/project";
 import { SLIDE_STRUCTURES, BUSINESS_COLORS } from "./data/slide-structures";
 import { Button } from "./components/ui/button";
-import { Download, ChevronLeft, Presentation } from "lucide-react";
+import { Download, ChevronLeft, Presentation, Loader2 } from "lucide-react";
+import { exportToPDF } from "./utils/pdf-export";
 
 type AppPhase = "home" | "editor";
 
@@ -66,6 +67,7 @@ export default function App() {
   const [projects, setProjects] = useState<Project[]>(() => loadProjects());
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
   const [designSystem, setDesignSystem] = useState<DesignSystem>(() => {
     const saved = localStorage.getItem("designSystem");
     return saved ? JSON.parse(saved) : DEFAULT_DESIGN_SYSTEMS[0];
@@ -168,18 +170,14 @@ export default function App() {
     setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1));
   };
 
-  const handleExport = () => {
-    if (!currentProject) return;
-    const markdown = currentProject.slides.map((s) => s.content).join("\n\n---\n\n");
-    const blob = new Blob([markdown], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${currentProject.name}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleExport = async () => {
+    if (!currentProject || isExporting) return;
+    setIsExporting(true);
+    try {
+      await exportToPDF(currentProject.slides, currentProject.name, designSystem);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Home
@@ -252,9 +250,13 @@ export default function App() {
             currentDesignSystem={designSystem}
             onDesignSystemChange={setDesignSystem}
           />
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            エクスポート
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            {isExporting ? "書き出し中..." : "PDFエクスポート"}
           </Button>
         </div>
       </div>
