@@ -59,6 +59,7 @@ export const SLIDE_TYPES: SlideTypeDefinition[] = [
   // 他のスライドタイプはここに追加
 ];
 
+import TemplateCover from '../components/templates/TemplateCover';
 import Template01 from '../components/templates/Template01';
 import Template02 from '../components/templates/Template02';
 import Template03 from '../components/templates/Template03';
@@ -67,6 +68,16 @@ import Template05 from '../components/templates/Template05';
 
 // テンプレート定義
 export const TEMPLATE_REGISTRY: Record<string, SlideTemplate> = {
+  templateCover: {
+    id: 'templateCover',
+    name: '表紙',
+    component: TemplateCover,
+    dataSchema: {
+      title: 'string',
+      subtitle: 'string',
+      date: 'string',
+    },
+  },
   template01: {
     id: 'template01',
     name: '先月の振り返り',

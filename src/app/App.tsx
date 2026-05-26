@@ -24,16 +24,30 @@ function buildDesignSystem(base: DesignSystem, businessType: string): DesignSyst
 
 function createNewProject(slideType: string, businessType: string): Project {
   const structure = SLIDE_STRUCTURES[slideType];
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月`;
+
+  const makeCover = (i: number): Slide => ({
+    id: `slide-${i}`,
+    content: `# 無題のプレゼンテーション\n\n${slideType}\n\n${dateStr}`,
+    title: "表紙",
+    templateId: "templateCover",
+    slideType,
+  });
+
   const slides: Slide[] =
     structure && structure.slides.length > 0
       ? structure.slides.map((def, i) => ({
           id: `slide-${i}`,
-          content: `# ${def.name}\n\n内容を入力してください`,
+          content:
+            def.templateId === "templateCover"
+              ? `# 無題のプレゼンテーション\n\n${slideType}\n\n${dateStr}`
+              : `# ${def.name}\n\n内容を入力してください`,
           title: def.name,
           templateId: def.templateId,
           slideType,
         }))
-      : [{ id: "slide-0", content: "# 新しいスライド\n\n内容を入力してください", title: "新しいスライド" }];
+      : [makeCover(0), { id: "slide-1", content: "# 新しいスライド\n\n内容を入力してください", title: "新しいスライド" }];
 
   const now = new Date().toISOString();
   return {
@@ -101,7 +115,17 @@ export default function App() {
     });
   }, []);
 
-  const handleNameChange = (name: string) => updateProject({ name });
+  const handleNameChange = (name: string) => {
+    // 表紙スライドのタイトルも連動して更新
+    const slides = currentProject?.slides.map((slide) => {
+      if (slide.templateId === "templateCover") {
+        const updated = slide.content.replace(/^#\s+.+$/m, `# ${name}`);
+        return { ...slide, content: updated };
+      }
+      return slide;
+    });
+    updateProject({ name, ...(slides ? { slides } : {}) });
+  };
 
   const handleSlideTypeChange = (slideType: string) => {
     updateProject({ slideType });

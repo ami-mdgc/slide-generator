@@ -10,10 +10,18 @@ export interface SlideStructure {
   slides: SlideDefinition[];
 }
 
+const COVER_SLIDE: SlideDefinition = {
+  name: "表紙",
+  templateId: "templateCover",
+  role: "プレゼンテーションのタイトルスライド",
+  markdownFormat: `# [タイトル]\n\n[サブタイトル]\n\n[日付]`,
+};
+
 export const SLIDE_STRUCTURES: Record<string, SlideStructure> = {
   月次総会: {
     label: "月次総会",
     slides: [
+      COVER_SLIDE,
       {
         name: "先月の振り返り",
         templateId: "template01",
@@ -102,6 +110,7 @@ export const SLIDE_STRUCTURES: Record<string, SlideStructure> = {
   四半期報告: {
     label: "四半期報告",
     slides: [
+      COVER_SLIDE,
       {
         name: "四半期サマリー",
         role: "四半期全体の業績サマリーと主要KPI",
@@ -152,6 +161,7 @@ export const SLIDE_STRUCTURES: Record<string, SlideStructure> = {
   提案資料: {
     label: "提案資料",
     slides: [
+      COVER_SLIDE,
       {
         name: "課題の整理",
         role: "顧客が抱える現状の課題",

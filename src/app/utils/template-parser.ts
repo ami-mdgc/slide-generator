@@ -248,8 +248,21 @@ export function parseTemplate05Data(slide: Slide, content: string): SlideTemplat
   return { title, subtitle, sections };
 }
 
+export function parseTemplateCoverData(slide: Slide, content: string): SlideTemplateData {
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1] : slide.title || '';
+
+  const lines = content.split('\n').filter((l) => l.trim() && !l.startsWith('#'));
+  const subtitle = lines[0]?.trim() || '';
+  const date = lines[1]?.trim() || '';
+
+  return { title, subtitle, date };
+}
+
 export function parseTemplateData(templateId: string, slide: Slide, content: string): SlideTemplateData {
   switch (templateId) {
+    case 'templateCover':
+      return parseTemplateCoverData(slide, content);
     case 'template01':
       return parseTemplate01Data(slide, content);
     case 'template02':
