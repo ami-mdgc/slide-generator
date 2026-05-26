@@ -1,3 +1,55 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+/* ── PDF print export ─────────────────────────────── */
+@media print {
+  /* Hide everything except the PDF layer */
+  body > * {
+    display: none !important;
+  }
+  #pdf-print-layer {
+    display: block !important;
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  /* One slide per page */
+  .pdf-slide-page {
+    width: 297mm;
+    height: 210mm;
+    overflow: hidden;
+    page-break-after: always;
+    break-after: page;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 16:9 wrapper fits A4 landscape width */
+  .pdf-slide-wrapper {
+    width: 297mm;
+    /* 297mm × (9/16) ≈ 167mm */
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  /* Scale 1920×1080 template to fill the wrapper */
+  /* 297mm at 96 CSS px/inch = 1122.52px  →  scale = 1122.52/1920 ≈ 0.5846 */
+  .pdf-slide-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1920px;
+    height: 1080px;
+    transform: scale(0.5846);
+    transform-origin: top left;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
