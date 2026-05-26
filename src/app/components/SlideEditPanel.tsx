@@ -2,138 +2,82 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Textarea } from "./ui/textarea";
-import { Edit3, Sparkles, Plus, Trash2, Wand2 } from "lucide-react";
-import { AIAssistant } from "./AIAssistant";
-import { TextToSlides } from "./TextToSlides";
+import { Plus, Trash2 } from "lucide-react";
 import { Slide } from "../utils/markdown-parser";
-import { SlideDefinition } from "../data/slide-structures";
 
 interface SlideEditPanelProps {
-  currentSlideContent: string;
+  currentSlide: Slide;
   onSlideUpdate: (newContent: string) => void;
   slideIndex: number;
-  onAddSlide?: () => void;
-  onDeleteSlide?: () => void;
-  onSlidesGenerate?: (slides: Slide[]) => void;
-  slideStructure?: SlideDefinition[];
   totalSlides: number;
+  onAddSlide: () => void;
+  onDeleteSlide: () => void;
 }
 
-type PanelView = "generate" | "ai" | "edit";
-
 export function SlideEditPanel({
-  currentSlideContent,
+  currentSlide,
   onSlideUpdate,
   slideIndex,
+  totalSlides,
   onAddSlide,
   onDeleteSlide,
-  onSlidesGenerate,
-  slideStructure = [],
-  totalSlides
 }: SlideEditPanelProps) {
-  const [panelView, setPanelView] = useState<PanelView>("generate");
-  const [editContent, setEditContent] = useState(currentSlideContent);
+  const [editContent, setEditContent] = useState(currentSlide.content);
 
   useEffect(() => {
-    setEditContent(currentSlideContent);
-  }, [currentSlideContent, slideIndex]);
+    setEditContent(currentSlide.content);
+  }, [currentSlide.id, currentSlide.content]);
 
   const handleSave = () => {
     onSlideUpdate(editContent);
   };
 
+  const isDirty = editContent !== currentSlide.content;
+
   return (
     <Card className="flex flex-col h-full">
-      {/* Tabs */}
-      <div className="border-b px-4 py-2 flex flex-col gap-2 flex-shrink-0">
-        <div className="flex items-center gap-1">
-          <Button
-            variant={panelView === "generate" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setPanelView("generate")}
-          >
-            <Wand2 className="h-4 w-4 mr-2" />
-            原稿から生成
-          </Button>
-          <Button
-            variant={panelView === "ai" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setPanelView("ai")}
-          >
-            <Sparkles className="h-4 w-4 mr-2" />
-            AI修正
-          </Button>
-          <Button
-            variant={panelView === "edit" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => {
-              setPanelView("edit");
-              setEditContent(currentSlideContent);
-            }}
-          >
-            <Edit3 className="h-4 w-4 mr-2" />
-            直接編集
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          {onAddSlide && (
-            <Button variant="outline" size="sm" onClick={onAddSlide} className="flex-1">
-              <Plus className="h-4 w-4 mr-2" />
-              追加
-            </Button>
-          )}
-          {onDeleteSlide && totalSlides > 1 && (
-            <Button variant="outline" size="sm" onClick={onDeleteSlide} className="flex-1">
-              <Trash2 className="h-4 w-4 mr-2" />
-              削除
-            </Button>
+      <div className="border-b px-4 py-3 flex items-center justify-between shrink-0">
+        <div>
+          <p className="font-medium text-sm">スライド {slideIndex + 1} を編集</p>
+          {currentSlide.title && (
+            <p className="text-xs text-muted-foreground">{currentSlide.title}</p>
           )}
         </div>
+        <Button size="sm" onClick={handleSave} disabled={!isDirty}>
+          保存
+        </Button>
       </div>
 
-      {panelView === "generate" && onSlidesGenerate && (
-        <div className="flex-1 overflow-hidden">
-          <TextToSlides slideStructure={slideStructure} onGenerate={onSlidesGenerate} />
-        </div>
-      )}
+      <div className="flex-1 overflow-hidden px-4 py-3">
+        <Textarea
+          value={editContent}
+          onChange={(e) => setEditContent(e.target.value)}
+          className="h-full font-mono text-sm resize-none"
+          placeholder={`# タイトル\n\n- 箇条書き1\n- 箇条書き2\n\n**重要な数値**`}
+        />
+      </div>
 
-      {panelView === "ai" && (
-        <div className="flex-1 overflow-hidden flex flex-col">
-          <div className="px-4 py-3 border-b flex-shrink-0">
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="font-medium text-sm">AI修正アシスタント</span>
-            </div>
-            <p className="text-xs text-muted-foreground">スライド {slideIndex + 1} を編集中</p>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <AIAssistant
-              currentSlideContent={currentSlideContent}
-              onSlideUpdate={onSlideUpdate}
-            />
-          </div>
-        </div>
-      )}
+      <div className="border-t px-4 py-3 flex gap-2 shrink-0">
+        <Button variant="outline" size="sm" onClick={onAddSlide} className="flex-1">
+          <Plus className="h-4 w-4 mr-1" />
+          スライド追加
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onDeleteSlide}
+          disabled={totalSlides <= 1}
+          className="flex-1"
+        >
+          <Trash2 className="h-4 w-4 mr-1" />
+          削除
+        </Button>
+      </div>
 
-      {panelView === "edit" && (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="p-4 flex items-center justify-between flex-shrink-0">
-            <div>
-              <p className="font-medium text-sm">スライド {slideIndex + 1}</p>
-              <p className="text-xs text-muted-foreground">マークダウン形式で編集</p>
-            </div>
-            <Button size="sm" onClick={handleSave}>保存</Button>
-          </div>
-          <div className="flex-1 overflow-hidden px-4 pb-4">
-            <Textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className="h-full font-mono text-sm"
-              placeholder="# タイトル&#10;&#10;- 箇条書き1&#10;- 箇条書き2"
-            />
-          </div>
-        </div>
-      )}
+      <div className="px-4 pb-3 shrink-0">
+        <p className="text-xs text-muted-foreground font-medium mb-1">マークダウン記法：</p>
+        <p className="text-xs text-muted-foreground"># 大見出し　## 中見出し　- 箇条書き　**太字**</p>
+      </div>
     </Card>
   );
 }

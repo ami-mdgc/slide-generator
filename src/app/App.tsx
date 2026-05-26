@@ -3,15 +3,12 @@ import { SlideViewer } from "./components/SlideViewer";
 import { SlideThumbnails } from "./components/SlideThumbnails";
 import { SlideEditPanel } from "./components/SlideEditPanel";
 import { DesignSystemSettings } from "./components/DesignSystemSettings";
-import { FigmaSync } from "./components/FigmaSync";
-import { ManualDesignSystemImport } from "./components/ManualDesignSystemImport";
-import { ApiKeySettings } from "./components/ApiKeySettings";
 import { ProjectSetup, ProjectConfig } from "./components/ProjectSetup";
 import { Slide } from "./utils/markdown-parser";
 import { DesignSystem, DEFAULT_DESIGN_SYSTEMS } from "./types/design-system";
 import { SLIDE_STRUCTURES, BUSINESS_COLORS } from "./data/slide-structures";
 import { Button } from "./components/ui/button";
-import { Download, Plus, Trash2 } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 
 type AppPhase = "setup" | "editor";
 
@@ -32,7 +29,6 @@ export default function App() {
   const handleSetupComplete = (config: ProjectConfig) => {
     setProjectConfig(config);
 
-    // カラーテーマを事業タイプに合わせて更新
     const colors = BUSINESS_COLORS[config.businessType];
     if (colors) {
       setDesignSystem((prev) => ({
@@ -41,12 +37,11 @@ export default function App() {
       }));
     }
 
-    // スライド構成を展開（空スライドで初期化）
     const structure = SLIDE_STRUCTURES[config.slideType];
     if (structure && structure.slides.length > 0) {
       const initialSlides: Slide[] = structure.slides.map((def, i) => ({
         id: `slide-${i}`,
-        content: `# ${def.name}`,
+        content: `# ${def.name}\n\n内容を入力してください`,
         title: def.name,
         templateId: def.templateId,
         slideType: config.slideType,
@@ -66,15 +61,15 @@ export default function App() {
     setPhase("editor");
   };
 
-  const handleSlidesGenerate = (newSlides: Slide[]) => {
-    setSlides(newSlides);
-    setCurrentSlideIndex(0);
-  };
-
   const handleSlideUpdate = (newContent: string) => {
     setSlides((prev) => {
       const updated = [...prev];
-      updated[currentSlideIndex] = { ...updated[currentSlideIndex], content: newContent };
+      const titleMatch = newContent.match(/^#\s+(.+)$/m);
+      updated[currentSlideIndex] = {
+        ...updated[currentSlideIndex],
+        content: newContent,
+        title: titleMatch ? titleMatch[1] : updated[currentSlideIndex].title,
+      };
       return updated;
     });
   };
@@ -85,8 +80,12 @@ export default function App() {
       content: "# 新しいスライド\n\n内容を入力してください",
       title: "新しいスライド",
     };
-    setSlides((prev) => [...prev, newSlide]);
-    setCurrentSlideIndex(slides.length);
+    setSlides((prev) => {
+      const updated = [...prev];
+      updated.splice(currentSlideIndex + 1, 0, newSlide);
+      return updated;
+    });
+    setCurrentSlideIndex(currentSlideIndex + 1);
   };
 
   const handleDeleteSlide = () => {
@@ -108,9 +107,6 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const slideStructure =
-    projectConfig ? (SLIDE_STRUCTURES[projectConfig.slideType]?.slides ?? []) : [];
-
   if (phase === "setup") {
     return <ProjectSetup onComplete={handleSetupComplete} />;
   }
@@ -128,9 +124,6 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-2">
-          <ApiKeySettings />
-          <FigmaSync onDesignSystemSync={setDesignSystem} />
-          <ManualDesignSystemImport onImport={setDesignSystem} />
           <DesignSystemSettings
             currentDesignSystem={designSystem}
             onDesignSystemChange={setDesignSystem}
@@ -148,7 +141,6 @@ export default function App() {
 
       {/* Main */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Thumbnails */}
         <div className="w-56 border-r p-3 shrink-0">
           <SlideThumbnails
             slides={slides}
@@ -157,7 +149,6 @@ export default function App() {
           />
         </div>
 
-        {/* Viewer */}
         <div className="flex-1 p-6 min-w-0">
           <SlideViewer
             slides={slides}
@@ -167,17 +158,14 @@ export default function App() {
           />
         </div>
 
-        {/* Edit Panel */}
         <div className="w-96 border-l p-4 shrink-0">
           <SlideEditPanel
-            currentSlideContent={slides[currentSlideIndex]?.content || ""}
+            currentSlide={slides[currentSlideIndex]}
             onSlideUpdate={handleSlideUpdate}
             slideIndex={currentSlideIndex}
+            totalSlides={slides.length}
             onAddSlide={handleAddSlide}
             onDeleteSlide={handleDeleteSlide}
-            onSlidesGenerate={handleSlidesGenerate}
-            slideStructure={slideStructure}
-            totalSlides={slides.length}
           />
         </div>
       </div>
