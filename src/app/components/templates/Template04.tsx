@@ -28,11 +28,11 @@ export default function Template04({ data }: { data: Template04Data }) {
         {data.initiatives.map((initiative, initIndex) => (
           <div key={initIndex} className="bg-[#f5f5f5] flex-[1_0_0] h-full min-w-px relative" data-name="box02">
             <div className="[word-break:break-word] content-stretch flex flex-col gap-[32px] items-start not-italic p-[40px] relative size-full">
-              <div className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full whitespace-nowrap">
+              <div className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
                 <p className="font-['Gen_Interface_JP_Display:Bold',sans-serif] leading-[1.5] relative shrink-0 text-[#18191e] text-[24px]">
                   {initiative.smallHeading}
                 </p>
-                <p className="font-['Gen_Interface_JP_Display:SemiBold',sans-serif] leading-[normal] relative shrink-0 text-[36px]" style={{ color: accent }}>
+                <p className="font-['Gen_Interface_JP_Display:SemiBold',sans-serif] leading-[normal] relative shrink-0 text-[32px]" style={{ color: accent }}>
                   {initiative.heading}
                 </p>
               </div>
@@ -43,7 +43,7 @@ export default function Template04({ data }: { data: Template04Data }) {
                     <p className="font-['Gen_Interface_JP_Display:Bold',sans-serif] leading-[1.5] relative shrink-0 text-[28px] whitespace-nowrap">
                       {item.label}
                     </p>
-                    <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Regular',sans-serif] leading-[1.5] relative text-[32px] w-full">
+                    <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Regular',sans-serif] leading-[1.5] relative text-[24px] w-full">
                       {item.text}
                     </p>
                   </div>
