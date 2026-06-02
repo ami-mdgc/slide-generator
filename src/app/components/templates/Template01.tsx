@@ -15,11 +15,11 @@ interface Template01Data extends SlideTemplateData {
   colors?: { accent: string; primary: string };
 }
 
-function Container({ text, primary }: { text: string; primary: string }) {
+function Container({ text, accent }: { text: string; accent: string }) {
   return (
     <div className="content-stretch flex gap-[20px] h-[44px] items-center relative shrink-0 w-full" data-name="Container">
       <div className="relative shrink-0 size-[24px]" data-name="Icon">
-        <div className="absolute inset-0" style={{ backgroundColor: primary }} />
+        <div className="absolute inset-0" style={{ backgroundColor: accent }} />
       </div>
       <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#18191e] text-[36px] whitespace-normal">
         {text}
@@ -72,7 +72,7 @@ export default function Template01({ data }: { data: Template01Data }) {
       {/* Summary section */}
       <div className="absolute bg-[#f5f5f5] content-stretch flex flex-col gap-[32px] items-start left-[96px] p-[64px] top-[227px] w-[1728px]" data-name="summary">
         {data.summaryItems.map((item, index) => (
-          <Container key={index} text={item.text} primary={primary} />
+          <Container key={index} text={item.text} accent={accent} />
         ))}
       </div>
 
