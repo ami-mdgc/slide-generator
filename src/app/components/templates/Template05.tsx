@@ -22,7 +22,7 @@ export default function Template05({ data }: { data: Template05Data }) {
 
       <div className="-translate-x-1/2 absolute content-stretch flex flex-col gap-[32px] items-start left-1/2 top-[219px] w-[1728px]" style={{ bottom: 96 }}>
         {data.sections.map((section, index) => (
-          <div key={index} className="bg-[#f5f5f5] relative shrink-0 w-full" data-name="box03">
+          <div key={index} className="bg-[#f5f5f5] relative flex-1 w-full" data-name="box03">
             <div className="content-stretch flex flex-col gap-[24px] items-start p-[40px] relative size-full">
               <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:SemiBold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[36px]" style={{ color: accent }}>
                 {section.heading}

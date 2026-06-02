@@ -152,25 +152,22 @@ export function parseTemplate03Data(slide: Slide, content: string): SlideTemplat
   };
 
   const metrics: { label: string; value: string; reference: string }[] = [];
-  const goalMatches = content.matchAll(/[-*]\s*(.+?)[:：]\s*(.+)/g);
+  const goalSection = content.match(/##\s*目標\s*\n([\s\S]+?)(?=\n##|$)/);
 
-  for (const match of goalMatches) {
-    const [, label, value] = match;
-    if (!label.includes('参考')) {
-      metrics.push({
-        label: label.trim() + '目標',
-        value: value.trim(),
-        reference: '3月参考：¥37,249,030',
-      });
+  if (goalSection) {
+    const lines = goalSection[1].split('\n').filter(l => l.trim());
+    for (const line of lines) {
+      const metricMatch = line.match(/(.+?)[:：]\s*(.+)/);
+      if (!metricMatch) continue;
+      const [, label, value] = metricMatch;
+      if (label.includes('参考') || label.includes('前月')) {
+        if (metrics.length > 0) {
+          metrics[metrics.length - 1].reference = line.trim();
+        }
+      } else {
+        metrics.push({ label: label.trim(), value: value.trim(), reference: '' });
+      }
     }
-  }
-
-  while (metrics.length < 3) {
-    metrics.push({
-      label: '事業売上目標',
-      value: '¥37,249,030',
-      reference: '3月参考：¥37,249,030',
-    });
   }
 
   return { title, theme, metrics: metrics.slice(0, 3) };
