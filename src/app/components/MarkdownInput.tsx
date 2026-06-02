@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Textarea } from "./ui/textarea";
-import { FileText, Plus, Trash2, ChevronUp, ChevronDown, Edit3, Sparkles } from "lucide-react";
+import { FileText, Plus, Trash2, ChevronUp, ChevronDown, Edit3, Sparkles, Upload } from "lucide-react";
 import { AIAssistant } from "./AIAssistant";
 import { cn } from "./ui/utils";
 
@@ -154,6 +154,40 @@ export function MarkdownInput({ onMarkdownSubmit }: MarkdownInputProps) {
     setFilename("sample-monthly-meeting.md");
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+
+      // Extract frontmatter
+      const fmMatch = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/);
+      const body = fmMatch ? text.slice(fmMatch[0].length) : text;
+
+      if (fmMatch) setFrontmatter(fmMatch[1].trim());
+
+      // Split into slides by ---
+      const parts = body
+        .split(/\n---\n|\n---$/)
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      if (parts.length > 0) {
+        setSlides(parts.map((content, i) => ({ id: String(Date.now() + i), content })));
+        setSelectedSlideIndex(0);
+      }
+
+      setFilename(file.name);
+    };
+    reader.readAsText(file);
+    // Reset so the same file can be re-uploaded
+    e.target.value = "";
+  };
+
   const hasContent = slides.some(s => s.content.trim());
 
   return (
@@ -256,9 +290,20 @@ export function MarkdownInput({ onMarkdownSubmit }: MarkdownInputProps) {
             <div className="p-6 flex flex-col h-full overflow-hidden">
               <div className="mb-4 flex-shrink-0">
                 <h3 className="mb-1">原稿を入力</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-3">
                   各スライドの内容をマークダウン形式で入力してください
                 </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".md"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  .mdファイルを読み込む
+                </Button>
               </div>
 
             <div className="space-y-4 flex-1 flex flex-col">
