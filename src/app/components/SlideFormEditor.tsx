@@ -310,6 +310,77 @@ function T05FormFields({ content, onUpdate }: { content: string; onUpdate: (s: s
   );
 }
 
+// --- template06 KPIグラフ ---
+interface T06MonthForm { label: string; values: { label: string; value: string }[]; }
+interface T06Form { title: string; months: T06MonthForm[]; }
+
+const DEFAULT_METRICS = ["事業売上", "事業粗利", "獲得金額"];
+
+function parseT06(c: string): T06Form {
+  const title = c.match(/^#\s+(.+)$/m)?.[1] ?? "";
+  const months: T06MonthForm[] = [];
+  const sectionRe = /##\s+(.+?)\n([\s\S]*?)(?=\n##|$)/g;
+  let m: RegExpExecArray | null;
+  while ((m = sectionRe.exec(c)) !== null) {
+    const label = m[1].trim();
+    const lines = m[2].split("\n").filter(l => l.trim());
+    const values = lines
+      .map(line => { const mm = line.match(/^(.+?)[:：]\s*(.+)$/); return mm ? { label: mm[1].trim(), value: mm[2].trim() } : null; })
+      .filter(Boolean) as { label: string; value: string }[];
+    months.push({ label, values: values.length ? values : DEFAULT_METRICS.map(l => ({ label: l, value: "" })) });
+  }
+  if (months.length === 0) {
+    ["先々月", "先月", "当月目標"].forEach(label =>
+      months.push({ label, values: DEFAULT_METRICS.map(l => ({ label: l, value: "" })) })
+    );
+  }
+  return { title, months };
+}
+function serializeT06(f: T06Form): string {
+  const sections = f.months.map(month =>
+    `## ${month.label}\n${month.values.map(v => `${v.label}: ${v.value}`).join("\n")}`
+  ).join("\n\n");
+  return `# ${f.title}\n\n${sections}`;
+}
+
+function T06FormFields({ content, onUpdate }: { content: string; onUpdate: (s: string) => void }) {
+  const [f, setF] = useState(() => parseT06(content));
+  useEffect(() => setF(parseT06(content)), [content]);
+  const upd = (patch: Partial<T06Form>) => {
+    const next = { ...f, ...patch };
+    setF(next);
+    onUpdate(serializeT06(next));
+  };
+  const updMonth = (mi: number, patch: Partial<T06MonthForm>) => {
+    const months = f.months.map((m, i) => i === mi ? { ...m, ...patch } : m);
+    upd({ months });
+  };
+  const updValue = (mi: number, vi: number, value: string) => {
+    const months = f.months.map((m, i) => {
+      if (i !== mi) return m;
+      const values = m.values.map((v, j) => j === vi ? { ...v, value } : v);
+      return { ...m, values };
+    });
+    upd({ months });
+  };
+  return (
+    <div className="space-y-5">
+      <div><FL>タイトル</FL><Input value={f.title} onChange={e => upd({ title: e.target.value })} placeholder="月次KPIグラフ" /></div>
+      {f.months.map((month, mi) => (
+        <FSection key={mi} title={`${mi + 1}列目`}>
+          <div><FL>期間ラベル</FL><Input value={month.label} onChange={e => updMonth(mi, { label: e.target.value })} placeholder="先々月（3月）" /></div>
+          {month.values.map((v, vi) => (
+            <FRow key={vi}>
+              <div className="w-24 shrink-0"><FL>{v.label}</FL></div>
+              <Input value={v.value} onChange={e => updValue(mi, vi, e.target.value)} placeholder="¥0" />
+            </FRow>
+          ))}
+        </FSection>
+      ))}
+    </div>
+  );
+}
+
 // --- Free-form (no template) ---
 function FreeFormFields({ content, onUpdate }: { content: string; onUpdate: (s: string) => void }) {
   const [val, setVal] = useState(content);
@@ -342,6 +413,7 @@ export function SlideFormEditor({ slide, onUpdate }: SlideFormEditorProps) {
       case "template03":    return <T03FormFields {...formProps} />;
       case "template04":    return <T04FormFields {...formProps} />;
       case "template05":    return <T05FormFields {...formProps} />;
+      case "template06":    return <T06FormFields {...formProps} />;
       default:              return <FreeFormFields {...formProps} />;
     }
   };

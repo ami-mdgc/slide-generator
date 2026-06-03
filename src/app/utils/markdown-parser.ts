@@ -39,7 +39,7 @@ export function parseMarkdownToSlides(markdown: string): Slide[] {
 
   // If slideType is specified, assign template IDs based on order
   const templateMapping: Record<string, string[]> = {
-    '月次総会': ['template01', 'template02', 'template03', 'template04', 'template05'],
+    '月次総会': ['template01', 'template06', 'template02', 'template03', 'template04', 'template05'],
   };
 
   const templates = slideType && templateMapping[slideType]

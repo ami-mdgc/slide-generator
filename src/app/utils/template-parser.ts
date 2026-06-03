@@ -245,6 +245,99 @@ export function parseTemplateCoverData(slide: Slide, content: string): SlideTemp
   return { title, subtitle, date };
 }
 
+export function parseTemplate06Data(slide: Slide, content: string): SlideTemplateData {
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1] : slide.title || '';
+
+  // Extract ## sections as months
+  const sectionRe = /##\s+(.+?)\n([\s\S]*?)(?=\n##|$)/g;
+  const months: string[] = [];
+  // label → [value per month]
+  const metricMap: Record<string, { values: number[]; formatted: string[] }> = {};
+  const metricOrder: string[] = [];
+
+  const parseNum = (s: string) => parseInt(s.replace(/[¥,\s]/g, ''), 10) || 0;
+
+  let match: RegExpExecArray | null;
+  while ((match = sectionRe.exec(content)) !== null) {
+    const monthLabel = match[1].trim();
+    months.push(monthLabel);
+    const sectionContent = match[2];
+
+    const lines = sectionContent.split('\n').filter(l => l.trim());
+    for (const line of lines) {
+      const m = line.match(/^(.+?)[:：]\s*(.+)$/);
+      if (!m) continue;
+      const label = m[1].trim();
+      const raw = m[2].trim();
+      if (!metricMap[label]) {
+        metricMap[label] = { values: [], formatted: [] };
+        metricOrder.push(label);
+      }
+      metricMap[label].values.push(parseNum(raw));
+      metricMap[label].formatted.push(raw);
+    }
+  }
+
+  const metrics = metricOrder.map(label => ({
+    label,
+    values: metricMap[label].values,
+    formatted: metricMap[label].formatted,
+  }));
+
+  return { title, months, metrics };
+}
+
+export function parseTemplate07Data(slide: Slide, content: string): SlideTemplateData {
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1] : slide.title || '';
+
+  // Summary bullets (before first ## section)
+  const beforeSections = content.replace(/^---.*$/m, '').split(/\n##/)[0];
+  const summaryItems = beforeSections
+    .split('\n')
+    .filter(l => l.trim().startsWith('-') || l.trim().startsWith('*'))
+    .map(l => l.replace(/^[-*]\s*/, '').trim())
+    .filter(Boolean);
+
+  // KPI metrics (label: value / 前月参考: value pattern)
+  const kpis: { label: string; value: string; reference?: string }[] = [];
+  const metricLines = beforeSections.split('\n').filter(l => !l.startsWith('#') && !l.startsWith('-') && !l.startsWith('*'));
+  for (const line of metricLines) {
+    const m = line.match(/^(.+?)[:：]\s*(.+)$/);
+    if (!m) continue;
+    const [, label, value] = m;
+    if (label.includes('参考') || label.includes('前月')) {
+      if (kpis.length > 0) kpis[kpis.length - 1].reference = line.trim();
+    } else {
+      kpis.push({ label: label.trim(), value: value.trim() });
+    }
+  }
+
+  // Chart data (## sections)
+  const parseNum = (s: string) => parseInt(s.replace(/[¥,\s]/g, ''), 10) || 0;
+  const months: string[] = [];
+  const metricMap: Record<string, { values: number[]; formatted: string[] }> = {};
+  const metricOrder: string[] = [];
+  const sectionRe = /##\s+(.+?)\n([\s\S]*?)(?=\n##|$)/g;
+  let m: RegExpExecArray | null;
+  while ((m = sectionRe.exec(content)) !== null) {
+    months.push(m[1].trim());
+    for (const line of m[2].split('\n').filter(l => l.trim())) {
+      const mm = line.match(/^(.+?)[:：]\s*(.+)$/);
+      if (!mm) continue;
+      const label = mm[1].trim();
+      const raw   = mm[2].trim();
+      if (!metricMap[label]) { metricMap[label] = { values: [], formatted: [] }; metricOrder.push(label); }
+      metricMap[label].values.push(parseNum(raw));
+      metricMap[label].formatted.push(raw);
+    }
+  }
+  const chartMetrics = metricOrder.map(label => ({ label, ...metricMap[label] }));
+
+  return { title, summaryItems, kpis, months, chartMetrics };
+}
+
 export function parseTemplateData(
   templateId: string,
   slide: Slide,
@@ -266,6 +359,10 @@ export function parseTemplateData(
       return { ...parseTemplate04Data(slide, content), colors: c };
     case 'template05':
       return { ...parseTemplate05Data(slide, content), colors: c };
+    case 'template06':
+      return { ...parseTemplate06Data(slide, content), colors: c };
+    case 'template07':
+      return { ...parseTemplate07Data(slide, content), colors: c };
     default:
       return { title: slide.title || '', content, colors: c };
   }

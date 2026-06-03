@@ -65,6 +65,8 @@ import Template02 from '../components/templates/Template02';
 import Template03 from '../components/templates/Template03';
 import Template04 from '../components/templates/Template04';
 import Template05 from '../components/templates/Template05';
+import Template06 from '../components/templates/Template06';
+import Template07 from '../components/templates/Template07';
 
 // テンプレート定義
 export const TEMPLATE_REGISTRY: Record<string, SlideTemplate> = {
@@ -124,6 +126,28 @@ export const TEMPLATE_REGISTRY: Record<string, SlideTemplate> = {
       title: 'string',
       subtitle: 'string',
       sections: 'array',
+    },
+  },
+  template06: {
+    id: 'template06',
+    name: 'KPIグラフ',
+    component: Template06,
+    dataSchema: {
+      title: 'string',
+      months: 'array',
+      metrics: 'array',
+    },
+  },
+  template07: {
+    id: 'template07',
+    name: '振り返り＋グラフ',
+    component: Template07,
+    dataSchema: {
+      title: 'string',
+      summaryItems: 'array',
+      kpis: 'array',
+      months: 'array',
+      chartMetrics: 'array',
     },
   },
 };

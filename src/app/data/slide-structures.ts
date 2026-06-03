@@ -36,6 +36,27 @@ export const SLIDE_STRUCTURES: Record<string, SlideStructure> = {
 前月参考: [前月の金額]`,
       },
       {
+        name: "KPIグラフ",
+        templateId: "template06",
+        role: "先々月・先月・当月目標の売上・粗利・獲得金額の棒グラフ比較",
+        markdownFormat: `# 月次KPIグラフ
+
+## 先々月（MM月）
+事業売上: ¥0
+事業粗利: ¥0
+獲得金額: ¥0
+
+## 先月（MM月）
+事業売上: ¥0
+事業粗利: ¥0
+獲得金額: ¥0
+
+## 当月目標（MM月）
+事業売上: ¥0
+事業粗利: ¥0
+獲得金額: ¥0`,
+      },
+      {
         name: "変動要因",
         templateId: "template02",
         role: "前月比の増加・減少要因の分析",
@@ -93,6 +114,34 @@ export const SLIDE_STRUCTURES: Record<string, SlideStructure> = {
 - [具体的な施策内容]
 - **狙い**
 - [期待する効果]`,
+      },
+      {
+        name: "事業数字の推移",
+        templateId: "template07",
+        role: "3期間（先々月・先月・当月目標）の売上・粗利・獲得金額の推移グラフ",
+        markdownFormat: `# 事業数字の推移
+
+事業売上: ¥0
+前月参考: ¥0
+事業粗利: ¥0
+前月参考: ¥0
+獲得金額: ¥0
+前月参考: ¥0
+
+## 先々月（MM月）
+事業売上: ¥0
+事業粗利: ¥0
+獲得金額: ¥0
+
+## 先月（MM月）
+事業売上: ¥0
+事業粗利: ¥0
+獲得金額: ¥0
+
+## 当月目標（MM月）
+事業売上: ¥0
+事業粗利: ¥0
+獲得金額: ¥0`,
       },
       {
         name: "特記事項",
