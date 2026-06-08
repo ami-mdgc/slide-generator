@@ -1,24 +1,30 @@
 import { useState } from "react";
 import { Plus, Trash2, Calendar, Presentation, Loader2 } from "lucide-react";
 import { Project } from "../types/project";
+import { PresenceData } from "../lib/presence";
 import { BUSINESS_COLORS } from "../data/slide-structures";
 import { cn } from "./ui/utils";
 
 interface HomeScreenProps {
   projects: Project[];
   loading?: boolean;
+  presence: PresenceData[];
+  currentSessionId: string;
   onNew: () => void;
   onOpen: (project: Project) => void;
   onDelete: (id: string) => void;
 }
 
-export function HomeScreen({ projects, loading, onNew, onOpen, onDelete }: HomeScreenProps) {
+export function HomeScreen({ projects, loading, presence, currentSessionId, onNew, onOpen, onDelete }: HomeScreenProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
     return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
   };
+
+  const viewersOf = (projectId: string) =>
+    presence.filter(p => p.projectId === projectId && p.sessionId !== currentSessionId);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -62,6 +68,7 @@ export function HomeScreen({ projects, loading, onNew, onOpen, onDelete }: HomeS
           {/* Project cards */}
           {projects.map((project) => {
             const colors = BUSINESS_COLORS[project.businessType] ?? Object.values(BUSINESS_COLORS)[0];
+            const viewers = viewersOf(project.id);
             return (
               <div
                 key={project.id}
@@ -93,6 +100,20 @@ export function HomeScreen({ projects, loading, onNew, onOpen, onDelete }: HomeS
                         ))}
                       </div>
                     </div>
+                    {/* Active viewers badge */}
+                    {viewers.length > 0 && (
+                      <div className="absolute top-2 left-2 flex -space-x-1.5">
+                        {viewers.slice(0, 3).map(v => (
+                          <div
+                            key={v.sessionId}
+                            title={`${v.name}が閲覧中`}
+                            className="w-5 h-5 rounded-full bg-[#5969a7] border border-white flex items-center justify-center text-[9px] font-bold text-white"
+                          >
+                            {v.name.slice(0, 1)}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </button>
 
                   {/* Delete button */}
@@ -119,7 +140,18 @@ export function HomeScreen({ projects, loading, onNew, onOpen, onDelete }: HomeS
                       <Calendar className="h-3 w-3" />
                       {formatDate(project.updatedAt)}
                     </span>
+                    {project.lastEditedBy && (
+                      <>
+                        <span className="text-xs text-muted-foreground">·</span>
+                        <span className="text-xs text-muted-foreground">{project.lastEditedBy}</span>
+                      </>
+                    )}
                   </div>
+                  {viewers.length > 0 && (
+                    <p className="text-[11px] text-[#5969a7] mt-0.5">
+                      {viewers.map(v => v.name).join('、')}が閲覧中
+                    </p>
+                  )}
                 </div>
               </div>
             );

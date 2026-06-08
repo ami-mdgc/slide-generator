@@ -9,6 +9,8 @@ import { DesignSystem, DEFAULT_DESIGN_SYSTEMS } from "./types/design-system";
 import { Project } from "./types/project";
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 import { db } from "./lib/firebase";
+import { getSessionId, getUserName, saveUserName, updatePresence, clearPresence, subscribeToPresence, PresenceData } from "./lib/presence";
+import { UserNameModal } from "./components/UserNameModal";
 import { SLIDE_STRUCTURES, BUSINESS_COLORS, SUMMARY_SLIDE_DEFS } from "./data/slide-structures";
 import { Button } from "./components/ui/button";
 import { Download, ChevronLeft, ChevronDown, Presentation, Loader2, FileDown, Copy, Settings, Palette } from "lucide-react";
@@ -165,6 +167,9 @@ export default function App() {
   const [phase, setPhase] = useState<AppPhase>("home");
   const [projects, setProjects] = useState<Project[]>([]);
   const [fsLoaded, setFsLoaded] = useState(false);
+  const [userName, setUserName] = useState<string | null>(() => getUserName());
+  const [presence, setPresence] = useState<PresenceData[]>([]);
+  const sessionId = getSessionId();
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
@@ -222,6 +227,30 @@ export default function App() {
     return unsub;
   }, []);
 
+  // Presence listener
+  useEffect(() => {
+    const unsub = subscribeToPresence(setPresence);
+    return unsub;
+  }, []);
+
+  // Presence heartbeat (30秒ごとに更新)
+  useEffect(() => {
+    if (!userName) return;
+    const projectId = currentProject?.id ?? null;
+    updatePresence(sessionId, userName, projectId);
+    const timer = setInterval(() => {
+      updatePresence(sessionId, userName, projectId);
+    }, 30_000);
+    return () => clearInterval(timer);
+  }, [userName, currentProject?.id, sessionId]);
+
+  // ページを離れたらpresenceを削除
+  useEffect(() => {
+    const onUnload = () => clearPresence(sessionId);
+    window.addEventListener('beforeunload', onUnload);
+    return () => window.removeEventListener('beforeunload', onUnload);
+  }, [sessionId]);
+
   // Auto-save to Firestore (debounced 1s)
   useEffect(() => {
     if (!currentProject) return;
@@ -261,9 +290,9 @@ export default function App() {
   const updateProject = useCallback((patch: Partial<Project>) => {
     setCurrentProject((prev) => {
       if (!prev) return prev;
-      return { ...prev, ...patch, updatedAt: new Date().toISOString() };
+      return { ...prev, ...patch, updatedAt: new Date().toISOString(), lastEditedBy: userName ?? undefined };
     });
-  }, []);
+  }, [userName]);
 
   const handleBulkTextChange = useCallback((text: string) => {
     setBulkText(text);
@@ -367,12 +396,27 @@ export default function App() {
     setIsExporting(true);
   };
 
+  // ユーザー名未設定
+  if (!userName) {
+    return (
+      <UserNameModal
+        open={true}
+        onSave={(name) => {
+          saveUserName(name);
+          setUserName(name);
+        }}
+      />
+    );
+  }
+
   // Home
   if (phase === "home") {
     return (
       <HomeScreen
         projects={projects}
         loading={!fsLoaded}
+        presence={presence}
+        currentSessionId={sessionId}
         onNew={handleNew}
         onOpen={handleOpen}
         onDelete={handleDelete}
@@ -410,6 +454,29 @@ export default function App() {
         />
 
         <span className="text-xs text-muted-foreground ml-1">{currentProject.slides.length}枚</span>
+
+        {/* 現在の閲覧者 */}
+        {(() => {
+          const viewers = presence.filter(p => p.projectId === currentProject.id);
+          if (viewers.length === 0) return null;
+          return (
+            <div className="flex items-center gap-1.5 ml-3">
+              {viewers.map(v => (
+                <div
+                  key={v.sessionId}
+                  title={v.name}
+                  className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0"
+                  style={{ backgroundColor: v.sessionId === sessionId ? '#1A1A1A' : '#5969a7' }}
+                >
+                  {v.name.slice(0, 1)}
+                </div>
+              ))}
+              <span className="text-xs text-muted-foreground">
+                {viewers.map(v => v.sessionId === sessionId ? `${v.name}（自分）` : v.name).join('、')}
+              </span>
+            </div>
+          );
+        })()}
 
         <div className="ml-auto flex items-center gap-2">
           {/* 設定ドロップダウン */}

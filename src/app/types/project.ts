@@ -7,6 +7,7 @@ export interface Project {
   businessType: string;
   slides: Slide[];
   bulkText?: string;
+  lastEditedBy?: string;
   createdAt: string;
   updatedAt: string;
 }
