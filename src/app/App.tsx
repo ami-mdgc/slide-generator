@@ -264,7 +264,8 @@ export default function App() {
     if (!currentProject) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      setDoc(doc(db, 'projects', currentProject.id), currentProject);
+      const project = JSON.parse(JSON.stringify(currentProject));
+      setDoc(doc(db, 'projects', project.id), project).catch(console.error);
     }, 1000);
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
   }, [currentProject]);
@@ -294,7 +295,8 @@ export default function App() {
   const handleBack = () => {
     if (currentProject) {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      setDoc(doc(db, 'projects', currentProject.id), currentProject);
+      const project = JSON.parse(JSON.stringify(currentProject)); // undefined除去
+      setDoc(doc(db, 'projects', project.id), project).catch(console.error);
     }
     setPhase("home");
   };
