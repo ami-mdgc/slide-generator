@@ -10,9 +10,9 @@ interface Template01Data extends SlideTemplateData {
 }
 
 function Container({ text, accent }: { text: string; accent: string }) {
+  void accent;
   return (
-    <div className="content-stretch flex gap-[20px] min-h-[44px] items-start relative w-full" data-name="Container">
-      <div className="relative shrink-0 mt-[20px]" style={{ width: 28, height: 4, backgroundColor: '#18191e' }} data-name="Icon" />
+    <div className="content-stretch flex min-h-[44px] items-start relative w-full" data-name="Container">
       <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Medium',sans-serif] leading-[1.4] not-italic relative text-[#18191e] text-[32px]">
         {text}
       </p>

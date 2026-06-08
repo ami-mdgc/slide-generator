@@ -28,12 +28,13 @@ export default function Template05({ data }: { data: Template05Data }) {
                 </p>
                 <div className="content-stretch flex flex-col gap-[16px] items-start relative w-full">
                   {section.items.map((item, itemIndex) => (
-                    <div key={itemIndex} className="flex gap-[12px] items-start w-full">
-                      <span className="font-['Gen_Interface_JP_Display:Regular',sans-serif] not-italic text-[#18191e] text-[32px] shrink-0">-</span>
-                      <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Regular',sans-serif] leading-[1.5] not-italic relative text-[#18191e] text-[32px]">
+                    item === '' ? (
+                      <div key={itemIndex} className="h-[16px] w-full" />
+                    ) : (
+                      <p key={itemIndex} className="[word-break:break-word] font-['Gen_Interface_JP_Display:Regular',sans-serif] leading-[1.5] not-italic relative text-[#18191e] text-[32px] w-full">
                         {item}
                       </p>
-                    </div>
+                    )
                   ))}
                 </div>
               </div>

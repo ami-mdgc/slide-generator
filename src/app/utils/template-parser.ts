@@ -53,7 +53,7 @@ export function parseTemplate01Data(slide: Slide, content: string): SlideTemplat
 
     if (currentSection === 'summary') {
       if (line.startsWith('-') || line.startsWith('*')) {
-        summaryItems.push({ text: line.replace(/^[-*]\s*/, '').trim() });
+        summaryItems.push({ text: line.trim() });
       } else {
         // コロンあり・なしどちらもサマリーに追加
         summaryItems.push({ text: line.trim() });
@@ -203,8 +203,10 @@ export function parseTemplate05Data(slide: Slide, content: string): SlideTemplat
     const items = block
       .split('\n')
       .filter(line => line.trim().startsWith('-'))
-      .map(line => line.replace(/^-\s*/, '').trim())
-      .filter(Boolean);
+      .map(line => line.replace(/^-\s*/, '').trim());
+    // Trim leading/trailing empty items
+    while (items.length > 0 && items[0] === '') items.shift();
+    while (items.length > 0 && items[items.length - 1] === '') items.pop();
     sections.push({ heading, items });
   }
 
