@@ -10,6 +10,7 @@ interface Template08Data extends SlideTemplateData {
 
 export default function Template08({ data }: { data: Template08Data }) {
   const accent = data.colors?.accent || '#c4ab46';
+  const primary = data.colors?.primary || '#5969a7';
   const { headers, rows } = data;
 
   // 「差」を含む列インデックスを差分列として扱う
@@ -47,7 +48,7 @@ export default function Template08({ data }: { data: Template08Data }) {
                   <th
                     key={i}
                     className="text-left px-[40px] font-['Gen_Interface_JP_Display:SemiBold',sans-serif] text-white"
-                    style={{ backgroundColor: accent, verticalAlign: 'middle', height: headerHeight, boxSizing: 'border-box', fontSize: i === 0 ? 32 : 36 }}
+                    style={{ backgroundColor: primary, verticalAlign: 'middle', height: headerHeight, boxSizing: 'border-box', fontSize: i === 0 ? 32 : 36 }}
                   >
                     {h}
                   </th>
