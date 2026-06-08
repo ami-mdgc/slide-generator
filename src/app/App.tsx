@@ -292,6 +292,10 @@ export default function App() {
   };
 
   const handleBack = () => {
+    if (currentProject) {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      setDoc(doc(db, 'projects', currentProject.id), currentProject);
+    }
     setPhase("home");
   };
 
