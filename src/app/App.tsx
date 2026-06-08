@@ -9,8 +9,10 @@ import { DesignSystem, DEFAULT_DESIGN_SYSTEMS } from "./types/design-system";
 import { Project } from "./types/project";
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 import { db } from "./lib/firebase";
-import { getSessionId, getUserName, saveUserName, updatePresence, clearPresence, subscribeToPresence, PresenceData } from "./lib/presence";
-import { UserNameModal } from "./components/UserNameModal";
+import { getSessionId, updatePresence, clearPresence, subscribeToPresence, PresenceData } from "./lib/presence";
+import { LoginScreen } from "./components/LoginScreen";
+import { auth } from "./lib/firebase";
+import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { SLIDE_STRUCTURES, BUSINESS_COLORS, SUMMARY_SLIDE_DEFS } from "./data/slide-structures";
 import { Button } from "./components/ui/button";
 import { Download, ChevronLeft, ChevronDown, Presentation, Loader2, FileDown, Copy, Settings, Palette } from "lucide-react";
@@ -167,7 +169,7 @@ export default function App() {
   const [phase, setPhase] = useState<AppPhase>("home");
   const [projects, setProjects] = useState<Project[]>([]);
   const [fsLoaded, setFsLoaded] = useState(false);
-  const [userName, setUserName] = useState<string | null>(() => getUserName());
+  const [user, setUser] = useState<User | null | undefined>(undefined); // undefined=確認中
   const [presence, setPresence] = useState<PresenceData[]>([]);
   const sessionId = getSessionId();
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
@@ -216,6 +218,11 @@ export default function App() {
     localStorage.setItem("designSystem", JSON.stringify(designSystem));
   }, [designSystem]);
 
+  // Auth state
+  useEffect(() => {
+    return onAuthStateChanged(auth, (u) => setUser(u));
+  }, []);
+
   // Firestore real-time listener
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'projects'), (snap) => {
@@ -235,14 +242,15 @@ export default function App() {
 
   // Presence heartbeat (30秒ごとに更新)
   useEffect(() => {
-    if (!userName) return;
+    if (!user) return;
+    const name = user.displayName || user.email || '名無し';
     const projectId = currentProject?.id ?? null;
-    updatePresence(sessionId, userName, projectId);
+    updatePresence(sessionId, name, projectId);
     const timer = setInterval(() => {
-      updatePresence(sessionId, userName, projectId);
+      updatePresence(sessionId, name, projectId);
     }, 30_000);
     return () => clearInterval(timer);
-  }, [userName, currentProject?.id, sessionId]);
+  }, [user, currentProject?.id, sessionId]);
 
   // ページを離れたらpresenceを削除
   useEffect(() => {
@@ -290,9 +298,10 @@ export default function App() {
   const updateProject = useCallback((patch: Partial<Project>) => {
     setCurrentProject((prev) => {
       if (!prev) return prev;
-      return { ...prev, ...patch, updatedAt: new Date().toISOString(), lastEditedBy: userName ?? undefined };
+      const name = user?.displayName || user?.email || undefined;
+      return { ...prev, ...patch, updatedAt: new Date().toISOString(), lastEditedBy: name };
     });
-  }, [userName]);
+  }, [user]);
 
   const handleBulkTextChange = useCallback((text: string) => {
     setBulkText(text);
@@ -396,18 +405,11 @@ export default function App() {
     setIsExporting(true);
   };
 
-  // ユーザー名未設定
-  if (!userName) {
-    return (
-      <UserNameModal
-        open={true}
-        onSave={(name) => {
-          saveUserName(name);
-          setUserName(name);
-        }}
-      />
-    );
-  }
+  // Auth確認中
+  if (user === undefined) return null;
+
+  // 未ログイン
+  if (!user) return <LoginScreen />;
 
   // Home
   if (phase === "home") {
@@ -417,9 +419,12 @@ export default function App() {
         loading={!fsLoaded}
         presence={presence}
         currentSessionId={sessionId}
+        userName={user.displayName || user.email || undefined}
+        userPhoto={user.photoURL || undefined}
         onNew={handleNew}
         onOpen={handleOpen}
         onDelete={handleDelete}
+        onSignOut={() => signOut(auth)}
       />
     );
   }
@@ -479,6 +484,14 @@ export default function App() {
         })()}
 
         <div className="ml-auto flex items-center gap-2">
+          {/* ユーザー情報 */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {user.photoURL && <img src={user.photoURL} className="w-6 h-6 rounded-full" />}
+            <span>{user.displayName || user.email}</span>
+            <button onClick={() => signOut(auth)} className="hover:text-foreground transition-colors underline underline-offset-2">
+              ログアウト
+            </button>
+          </div>
           {/* 設定ドロップダウン */}
           <div className="relative">
             <Button variant="outline" size="sm" onClick={() => setSettingsOpen(v => !v)}>

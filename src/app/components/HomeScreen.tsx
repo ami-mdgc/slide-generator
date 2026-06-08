@@ -10,12 +10,15 @@ interface HomeScreenProps {
   loading?: boolean;
   presence: PresenceData[];
   currentSessionId: string;
+  userName?: string;
+  userPhoto?: string;
   onNew: () => void;
   onOpen: (project: Project) => void;
   onDelete: (id: string) => void;
+  onSignOut: () => void;
 }
 
-export function HomeScreen({ projects, loading, presence, currentSessionId, onNew, onOpen, onDelete }: HomeScreenProps) {
+export function HomeScreen({ projects, loading, presence, currentSessionId, userName, userPhoto, onNew, onOpen, onDelete, onSignOut }: HomeScreenProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const formatDate = (iso: string) => {
@@ -34,6 +37,13 @@ export function HomeScreen({ projects, loading, presence, currentSessionId, onNe
           <Presentation className="h-4 w-4 text-white" />
         </div>
         <span className="text-sm font-semibold tracking-tight">Slide Generator</span>
+        <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+          {userPhoto && <img src={userPhoto} className="w-6 h-6 rounded-full" />}
+          <span>{userName}</span>
+          <button onClick={onSignOut} className="hover:text-foreground transition-colors underline underline-offset-2">
+            ログアウト
+          </button>
+        </div>
       </header>
 
       {/* Main */}
