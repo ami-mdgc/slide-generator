@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, Calendar, Presentation, Loader2 } from "lucide-react";
+import { Plus, Trash2, Calendar, Presentation, Loader2, LogOut } from "lucide-react";
 import { Project } from "../types/project";
 import { PresenceData } from "../lib/presence";
 import { BUSINESS_COLORS } from "../data/slide-structures";
@@ -20,6 +20,7 @@ interface HomeScreenProps {
 
 export function HomeScreen({ projects, loading, presence, currentSessionId, userName, userPhoto, onNew, onOpen, onDelete, onSignOut }: HomeScreenProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
@@ -37,12 +38,31 @@ export function HomeScreen({ projects, loading, presence, currentSessionId, user
           <Presentation className="h-4 w-4 text-white" />
         </div>
         <span className="text-sm font-semibold tracking-tight">Slide Generator</span>
-        <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-          {userPhoto && <img src={userPhoto} className="w-6 h-6 rounded-full" />}
-          <span>{userName}</span>
-          <button onClick={onSignOut} className="hover:text-foreground transition-colors underline underline-offset-2">
-            ログアウト
+        <div className="ml-auto relative">
+          <button
+            onClick={() => setUserMenuOpen(v => !v)}
+            className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors text-sm"
+          >
+            {userPhoto
+              ? <img src={userPhoto} className="w-6 h-6 rounded-full" />
+              : <div className="w-6 h-6 rounded-full bg-muted-foreground/20 flex items-center justify-center text-xs font-medium">{userName?.slice(0, 1)}</div>
+            }
+            <span className="text-sm">{userName}</span>
           </button>
+          {userMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
+              <div className="absolute right-0 top-full mt-1 w-40 bg-card border rounded-lg shadow-lg z-20 py-1 overflow-hidden">
+                <button
+                  onClick={() => { onSignOut(); setUserMenuOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-left text-destructive"
+                >
+                  <LogOut className="h-4 w-4" />
+                  ログアウト
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </header>
 

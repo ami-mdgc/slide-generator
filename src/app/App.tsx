@@ -484,14 +484,6 @@ export default function App() {
         })()}
 
         <div className="ml-auto flex items-center gap-2">
-          {/* ユーザー情報 */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {user.photoURL && <img src={user.photoURL} className="w-6 h-6 rounded-full" />}
-            <span>{user.displayName || user.email}</span>
-            <button onClick={() => signOut(auth)} className="hover:text-foreground transition-colors underline underline-offset-2">
-              ログアウト
-            </button>
-          </div>
           {/* 設定ドロップダウン */}
           <div className="relative">
             <Button variant="outline" size="sm" onClick={() => setSettingsOpen(v => !v)}>
