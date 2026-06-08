@@ -1,4 +1,5 @@
 import { SlideTemplateData } from "../../types/slide-template";
+import { SafeArea } from "./SlideLayout";
 
 interface MetricData {
   label: string;
@@ -64,8 +65,9 @@ export default function Template06({ data }: { data: Template06Data }) {
       {/* Left accent bar */}
       <div className="absolute left-0 top-0 bottom-0 w-[10px]" style={{ backgroundColor: primary }} />
 
+      <SafeArea>
       {/* Title */}
-      <div className="absolute left-[96px] top-[72px]">
+      <div className="absolute left-0 top-0">
         <p className="font-['Gen_Interface_JP_Display:Medium',sans-serif] text-[58px] text-[#18191e] whitespace-nowrap leading-none">
           {data.title}
         </p>
@@ -73,7 +75,7 @@ export default function Template06({ data }: { data: Template06Data }) {
 
       <svg
         width={SVG_W} height={SVG_H}
-        style={{ position: "absolute", left: 120, top: 190 }}
+        style={{ position: "absolute", left: 0, top: 125 }}
         overflow="visible"
       >
         {/* Grid lines */}
@@ -168,7 +170,7 @@ export default function Template06({ data }: { data: Template06Data }) {
 
       {/* Legend */}
       <div className="absolute flex items-center"
-        style={{ bottom: 36, left: "50%", transform: "translateX(-50%)", gap: 40, whiteSpace: "nowrap" }}>
+        style={{ bottom: 0, left: "50%", transform: "translateX(-50%)", gap: 40, whiteSpace: "nowrap" }}>
         {revenue && (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 20, height: 14, backgroundColor: PRIMARY_LIGHT, borderRadius: 3, border: `1px solid ${primary}` }} />
@@ -191,6 +193,7 @@ export default function Template06({ data }: { data: Template06Data }) {
           </div>
         )}
       </div>
+      </SafeArea>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { SlideViewer } from "./components/SlideViewer";
 import { SlideThumbnails } from "./components/SlideThumbnails";
 import { SlideEditPanel } from "./components/SlideEditPanel";
@@ -7,60 +7,126 @@ import { HomeScreen } from "./components/HomeScreen";
 import { Slide, parseMarkdownToSlides } from "./utils/markdown-parser";
 import { DesignSystem, DEFAULT_DESIGN_SYSTEMS } from "./types/design-system";
 import { Project, loadProjects, saveProject, deleteProject } from "./types/project";
-import { SLIDE_STRUCTURES, BUSINESS_COLORS } from "./data/slide-structures";
+import { SLIDE_STRUCTURES, BUSINESS_COLORS, SUMMARY_SLIDE_DEFS } from "./data/slide-structures";
 import { Button } from "./components/ui/button";
-import { Download, ChevronLeft, Presentation, Loader2, FileDown } from "lucide-react";
+import { Download, ChevronLeft, Presentation, Loader2, FileDown, Copy, Settings, Palette } from "lucide-react";
 import { PDFExportLayer } from "./components/PDFExportLayer";
 
 type AppPhase = "home" | "editor";
 
-const SLIDE_TYPES = Object.keys(SLIDE_STRUCTURES);
 const BUSINESS_TYPES = Object.keys(BUSINESS_COLORS);
 
-function buildDesignSystem(base: DesignSystem, businessType: string): DesignSystem {
-  const colors = BUSINESS_COLORS[businessType];
-  if (!colors) return base;
-  return { ...base, colors: { ...base.colors, primary: colors.primary, accent: colors.accent } };
+function generateMarkdownTemplate(slideType: string): string {
+  const structure = SLIDE_STRUCTURES[slideType];
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月`;
+  const slideDefs = structure?.slides ?? [];
+
+  const sections: string[] = [];
+
+  // 各事業
+  BUSINESS_TYPES.forEach((biz) => {
+    slideDefs.forEach((def) => {
+      if (def.templateId === "templateCover") {
+        sections.push(`# ${biz}\n\n${slideType}\n\n${dateStr}`);
+      } else {
+        sections.push(def.markdownFormat);
+      }
+    });
+  });
+
+  // サマリー
+  sections.push(`# サマリー\n\n${slideType}\n\n${dateStr}`);
+  SUMMARY_SLIDE_DEFS.forEach(def => sections.push(def.markdownFormat));
+
+  return sections.join("\n\n---\n\n");
 }
 
-function createNewProject(slideType: string, businessType: string): Project {
+function createNewProject(slideType: string): Project {
   const structure = SLIDE_STRUCTURES[slideType];
   const today = new Date();
   const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月`;
 
-  const makeCover = (i: number): Slide => ({
-    id: `slide-${i}`,
-    content: `# 無題のプレゼンテーション\n\n${slideType}\n\n${dateStr}`,
-    title: "表紙",
-    templateId: "templateCover",
-    slideType,
+  const makeMonth = (offset: number) => {
+    const d = new Date(today);
+    d.setMonth(d.getMonth() + offset);
+    return `${d.getMonth() + 1}月`;
+  };
+
+  const allSlides: Slide[] = [];
+
+  BUSINESS_TYPES.forEach((businessType, bizIdx) => {
+    const colors = BUSINESS_COLORS[businessType];
+    const slideDefs = structure?.slides ?? [];
+
+    slideDefs.forEach((def, slideIdx) => {
+      const id = `slide-${bizIdx * slideDefs.length + slideIdx}`;
+      let content: string;
+
+      if (def.templateId === "templateCover") {
+        content = `# ${businessType}\n\n${slideType}\n\n${dateStr}`;
+      } else if (def.templateId === "template07") {
+        content = `# 事業数字の推移\n\n## ${makeMonth(-2)}\n事業売上: ¥0\n事業粗利: ¥0\n獲得金額: ¥0\n\n## ${makeMonth(-1)}\n事業売上: ¥0\n事業粗利: ¥0\n獲得金額: ¥0\n\n## ${makeMonth(0)}（目標）\n事業売上: ¥0\n事業粗利: ¥0\n獲得金額: ¥0`;
+      } else {
+        content = `# ${def.name}\n\n内容を入力してください`;
+      }
+
+      allSlides.push({
+        id,
+        content,
+        title: def.templateId === "templateCover" ? businessType : def.name,
+        templateId: def.templateId,
+        slideType,
+        colors,
+      });
+    });
   });
 
-  const slides: Slide[] =
-    structure && structure.slides.length > 0
-      ? structure.slides.map((def, i) => ({
-          id: `slide-${i}`,
-          content:
-            def.templateId === "templateCover"
-              ? `# 無題のプレゼンテーション\n\n${slideType}\n\n${dateStr}`
-              : def.templateId === "template07"
-              ? `# 事業数字の推移\n\n事業売上: ¥37,249,030\n前月参考: ¥35,182,400\n事業粗利: ¥9,310,000\n前月参考: ¥8,420,000\n獲得金額: ¥13,500,000\n前月参考: ¥11,800,000\n\n## 先々月（3月）\n事業売上: ¥35,182,400\n事業粗利: ¥8,420,000\n獲得金額: ¥11,800,000\n\n## 先月（4月）\n事業売上: ¥37,249,030\n事業粗利: ¥9,310,000\n獲得金額: ¥13,500,000\n\n## 当月目標（5月）\n事業売上: ¥41,000,000\n事業粗利: ¥10,500,000\n獲得金額: ¥15,200,000`
-              : def.templateId === "template06"
-              ? `# 月次KPIグラフ\n\n## 先々月（3月）\n事業売上: ¥35,182,400\n事業粗利: ¥8,420,000\n獲得金額: ¥11,800,000\n\n## 先月（4月）\n事業売上: ¥37,249,030\n事業粗利: ¥9,310,000\n獲得金額: ¥13,500,000\n\n## 当月目標（5月）\n事業売上: ¥41,000,000\n事業粗利: ¥10,500,000\n獲得金額: ¥15,200,000`
-              : `# ${def.name}\n\n内容を入力してください`,
-          title: def.name,
-          templateId: def.templateId,
-          slideType,
-        }))
-      : [makeCover(0), { id: "slide-1", content: "# 新しいスライド\n\n内容を入力してください", title: "新しいスライド" }];
+  // ── サマリーセクション ──
+  const summaryColors = { primary: "#1A1A1A", accent: "#1A1A1A" };
+  const summaryBase = allSlides.length;
+  const summarySlides: Slide[] = [
+    {
+      id: `slide-${summaryBase}`,
+      content: `# サマリー\n\n${slideType}\n\n${dateStr}`,
+      title: "サマリー",
+      templateId: "templateCover",
+      slideType,
+      colors: summaryColors,
+    },
+    ...SUMMARY_SLIDE_DEFS.map((def, i) => {
+      let content: string;
+      if (def.templateId === "template10") {
+        const m3 = makeMonth(0);
+        content = `# 各事業サマリー（${m3}）\n\nみんなの買取: 一言コメントを入力\n不用品回収の窓口: 一言コメントを入力\nおそうじ合衆国: 一言コメントを入力\ngaiheki+: 一言コメントを入力\n解体相談所: 一言コメントを入力\nSENBATSU: 一言コメントを入力\nGEKITAI: 一言コメントを入力`;
+      } else if (def.templateId === "template09") {
+        const m1 = makeMonth(-2);
+        const m2 = makeMonth(-1);
+        const m3 = makeMonth(0);
+        const revLine = `みんなの買取: 4000000, 4000000, 4000000\n不用品回収の窓口: 5000000, 5000000, 5000000\nおそうじ合衆国: 3000000, 3000000, 3000000\ngaiheki+: 2000000, 2000000, 2000000\n解体相談所: 1000000, 1000000, 1000000\nSENBATSU: 1000000, 1000000, 1000000\nGEKITAI: 1000000, 1000000, 1000000`;
+        const prfLine = `みんなの買取: 1200000, 1200000, 1200000\n不用品回収の窓口: 1500000, 1500000, 1500000\nおそうじ合衆国: 900000, 900000, 900000\ngaiheki+: 600000, 600000, 600000\n解体相談所: 300000, 300000, 300000\nSENBATSU: 300000, 300000, 300000\nGEKITAI: 300000, 300000, 300000`;
+        content = `# 月次サマリー（${m1}→${m2}→${m3}目標）\n\n## 売上\n${revLine}\n\n## 粗利\n${prfLine}`;
+      } else {
+        content = `# ${def.name}\n\n内容を入力してください`;
+      }
+      return {
+        id: `slide-${summaryBase + 1 + i}`,
+        content,
+        title: def.name,
+        templateId: def.templateId,
+        slideType,
+        colors: summaryColors,
+      };
+    }),
+  ];
 
   const now = new Date().toISOString();
   return {
     id: `project-${Date.now()}`,
     name: "無題のプレゼンテーション",
     slideType,
-    businessType,
-    slides,
+    businessType: "",
+    slides: [...allSlides, ...summarySlides],
     createdAt: now,
     updatedAt: now,
   };
@@ -72,6 +138,37 @@ export default function App() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [designDialogOpen, setDesignDialogOpen] = useState(false);
+  const [leftWidth, setLeftWidth] = useState(208);
+  const [rightWidth, setRightWidth] = useState(352);
+  const [bulkText, setBulkText] = useState("");
+  const draggingRef = useRef<{ side: "left" | "right"; startX: number; startWidth: number } | null>(null);
+
+  const startDrag = (side: "left" | "right", e: React.MouseEvent) => {
+    e.preventDefault();
+    draggingRef.current = {
+      side,
+      startX: e.clientX,
+      startWidth: side === "left" ? leftWidth : rightWidth,
+    };
+    const onMove = (e: MouseEvent) => {
+      if (!draggingRef.current) return;
+      const delta = e.clientX - draggingRef.current.startX;
+      if (draggingRef.current.side === "left") {
+        setLeftWidth(Math.max(160, Math.min(480, draggingRef.current.startWidth + delta)));
+      } else {
+        setRightWidth(Math.max(240, Math.min(600, draggingRef.current.startWidth - delta)));
+      }
+    };
+    const onUp = () => {
+      draggingRef.current = null;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
   const [designSystem, setDesignSystem] = useState<DesignSystem>(() => {
     const saved = localStorage.getItem("designSystem");
     return saved ? JSON.parse(saved) : DEFAULT_DESIGN_SYSTEMS[0];
@@ -90,16 +187,18 @@ export default function App() {
   }, [currentProject]);
 
   const handleNew = () => {
-    const project = createNewProject("月次総会", BUSINESS_TYPES[0]);
+    const project = createNewProject("月次総会");
     setCurrentProject(project);
-    setDesignSystem(buildDesignSystem(DEFAULT_DESIGN_SYSTEMS[0], project.businessType));
+    setBulkText("");
+    setDesignSystem(DEFAULT_DESIGN_SYSTEMS[0]);
     setCurrentSlideIndex(0);
     setPhase("editor");
   };
 
   const handleOpen = (project: Project) => {
     setCurrentProject(project);
-    setDesignSystem(buildDesignSystem(DEFAULT_DESIGN_SYSTEMS[0], project.businessType));
+    setBulkText(project.bulkText ?? "");
+    setDesignSystem(DEFAULT_DESIGN_SYSTEMS[0]);
     setCurrentSlideIndex(0);
     setPhase("editor");
   };
@@ -121,25 +220,13 @@ export default function App() {
     });
   }, []);
 
+  const handleBulkTextChange = useCallback((text: string) => {
+    setBulkText(text);
+    updateProject({ bulkText: text });
+  }, [updateProject]);
+
   const handleNameChange = (name: string) => {
-    // 表紙スライドのタイトルも連動して更新
-    const slides = currentProject?.slides.map((slide) => {
-      if (slide.templateId === "templateCover") {
-        const updated = slide.content.replace(/^#\s+.+$/m, `# ${name}`);
-        return { ...slide, content: updated };
-      }
-      return slide;
-    });
-    updateProject({ name, ...(slides ? { slides } : {}) });
-  };
-
-  const handleSlideTypeChange = (slideType: string) => {
-    updateProject({ slideType });
-  };
-
-  const handleBusinessTypeChange = (businessType: string) => {
-    updateProject({ businessType });
-    setDesignSystem(buildDesignSystem(designSystem, businessType));
+    updateProject({ name });
   };
 
   const handleSlideUpdate = (newContent: string) => {
@@ -178,11 +265,45 @@ export default function App() {
     if (!currentProject) return;
     const parsed = parseMarkdownToSlides(markdown);
     if (parsed.length === 0) return;
-    const slides: Slide[] = parsed.map((slide, i) => ({
-      ...slide,
-      id: currentProject.slides[i]?.id || slide.id,
-      templateId: currentProject.slides[i]?.templateId || slide.templateId,
-    }));
+
+    const SUMMARY_COLORS = { primary: "#1A1A1A", accent: "#1A1A1A" };
+    const businessNames = Object.keys(BUSINESS_COLORS);
+    const slideDefs = SLIDE_STRUCTURES[currentProject.slideType || "月次総会"]?.slides ?? [];
+
+    let currentColors = SUMMARY_COLORS as { primary: string; accent: string };
+    let bizSlideCount = 0;
+    let isSummary = false;
+
+    const mapped: Slide[] = parsed.map((slide, i) => {
+      const title = slide.title || "";
+      if (businessNames.includes(title)) {
+        currentColors = BUSINESS_COLORS[title];
+        bizSlideCount = 0;
+        isSummary = false;
+        return { ...slide, id: `slide-${i}`, templateId: "templateCover", colors: currentColors };
+      } else if (title === "サマリー") {
+        currentColors = SUMMARY_COLORS;
+        bizSlideCount = 0;
+        isSummary = true;
+        return { ...slide, id: `slide-${i}`, templateId: "templateCover", colors: currentColors };
+      } else {
+        // サマリー: SUMMARY_SLIDE_DEFS[0]から、通常事業: slideDefs[1]から（[0]は表紙）
+        const def = isSummary ? SUMMARY_SLIDE_DEFS[bizSlideCount] : slideDefs[bizSlideCount + 1];
+        bizSlideCount++;
+        return { ...slide, id: `slide-${i}`, templateId: def?.templateId || slide.templateId, colors: currentColors };
+      }
+    });
+
+    // 特記事項スライドでコンテンツが「なし」のみなら削除
+    const slides = mapped.filter((slide) => {
+      const isSpecialNotes =
+        slide.templateId === "template05" ||
+        /^#\s*特記事項/.test(slide.content);
+      if (!isSpecialNotes) return true;
+      const body = slide.content.replace(/^#.+$/m, "").trim();
+      return body !== "なし";
+    });
+
     updateProject({ slides });
     setCurrentSlideIndex(0);
   }, [currentProject, updateProject]);
@@ -233,34 +354,46 @@ export default function App() {
           placeholder="無題のプレゼンテーション"
         />
 
-        {/* Slide type dropdown */}
-        <select
-          value={currentProject.slideType}
-          onChange={(e) => handleSlideTypeChange(e.target.value)}
-          className="px-3 py-1.5 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-        >
-          {SLIDE_TYPES.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-
-        {/* Business type dropdown */}
-        <select
-          value={currentProject.businessType}
-          onChange={(e) => handleBusinessTypeChange(e.target.value)}
-          className="px-3 py-1.5 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-        >
-          {BUSINESS_TYPES.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-
         <span className="text-xs text-muted-foreground ml-1">{currentProject.slides.length}枚</span>
 
         <div className="ml-auto flex items-center gap-2">
+          {/* 設定ドロップダウン */}
+          <div className="relative">
+            <Button variant="outline" size="sm" onClick={() => setSettingsOpen(v => !v)}>
+              <Settings className="h-4 w-4 mr-2" />
+              設定
+            </Button>
+            {settingsOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setSettingsOpen(false)} />
+                <div className="absolute right-0 top-full mt-1 w-52 bg-card border rounded-lg shadow-lg z-20 py-1 overflow-hidden">
+                  <button
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted transition-colors text-left"
+                    onClick={() => {
+                      const md = generateMarkdownTemplate(currentProject.slideType || "月次総会");
+                      navigator.clipboard.writeText(md);
+                      setSettingsOpen(false);
+                    }}
+                  >
+                    <Copy className="h-4 w-4 text-muted-foreground" />
+                    MDテンプレートをコピー
+                  </button>
+                  <button
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted transition-colors text-left"
+                    onClick={() => { setDesignDialogOpen(true); setSettingsOpen(false); }}
+                  >
+                    <Palette className="h-4 w-4 text-muted-foreground" />
+                    デザイン設定
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <DesignSystemSettings
             currentDesignSystem={designSystem}
             onDesignSystemChange={setDesignSystem}
+            open={designDialogOpen}
+            onOpenChange={setDesignDialogOpen}
           />
           <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
             {isExporting ? (
@@ -275,7 +408,8 @@ export default function App() {
 
       {/* Main 3-column */}
       <div className="flex-1 flex overflow-hidden">
-        <div className="w-52 border-r p-3 shrink-0">
+        {/* Left: slide thumbnails */}
+        <div className="shrink-0 p-3 overflow-hidden" style={{ width: leftWidth }}>
           <SlideThumbnails
             slides={currentProject.slides}
             currentSlideIndex={currentSlideIndex}
@@ -283,6 +417,13 @@ export default function App() {
           />
         </div>
 
+        {/* Drag handle: left */}
+        <div
+          className="w-1 shrink-0 hover:bg-primary/30 cursor-col-resize transition-colors border-x border-border"
+          onMouseDown={(e) => startDrag("left", e)}
+        />
+
+        {/* Center: slide viewer */}
         <div className="flex-1 p-6 min-w-0">
           <SlideViewer
             slides={currentProject.slides}
@@ -292,7 +433,14 @@ export default function App() {
           />
         </div>
 
-        <div className="w-88 border-l p-4 shrink-0" style={{ width: "22rem" }}>
+        {/* Drag handle: right */}
+        <div
+          className="w-1 shrink-0 hover:bg-primary/30 cursor-col-resize transition-colors border-x border-border"
+          onMouseDown={(e) => startDrag("right", e)}
+        />
+
+        {/* Right: edit panel */}
+        <div className="shrink-0 p-4 overflow-hidden" style={{ width: rightWidth }}>
           <SlideEditPanel
             currentSlide={currentProject.slides[currentSlideIndex]}
             allSlides={currentProject.slides}
@@ -302,6 +450,8 @@ export default function App() {
             totalSlides={currentProject.slides.length}
             onAddSlide={handleAddSlide}
             onDeleteSlide={handleDeleteSlide}
+            bulkText={bulkText}
+            onBulkTextChange={handleBulkTextChange}
           />
         </div>
       </div>

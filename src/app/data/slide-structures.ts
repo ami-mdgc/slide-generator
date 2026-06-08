@@ -28,33 +28,31 @@ export const SLIDE_STRUCTURES: Record<string, SlideStructure> = {
         role: "先月の実績KPI・数値・達成状況のサマリー",
         markdownFormat: `# [タイトル（例：先月の振り返り（YYYY年MM月実績））]
 
-[KPI名1]: [実績値（達成率など）]
-[KPI名2]: [実績値]
-[KPI名3]: [実績値]
+- [成果・振り返り1（具体的な内容）]
+- [成果・振り返り2]
+- [成果・振り返り3]
 
 事業売上: [金額]
+前月参考: [前月の金額]
+事業粗利: [金額]
+前月参考: [前月の金額]
+獲得金額: [金額]
 前月参考: [前月の金額]`,
       },
       {
-        name: "KPIグラフ",
-        templateId: "template06",
-        role: "先々月・先月・当月目標の売上・粗利・獲得金額の棒グラフ比較",
-        markdownFormat: `# 月次KPIグラフ
+        name: "前月比較",
+        templateId: "template08",
+        role: "先月と今月のKPIを比較するテーブル",
+        markdownFormat: `# 前月比較（[先月]月→[今月]月）
 
-## 先々月（MM月）
-事業売上: ¥0
-事業粗利: ¥0
-獲得金額: ¥0
-
-## 先月（MM月）
-事業売上: ¥0
-事業粗利: ¥0
-獲得金額: ¥0
-
-## 当月目標（MM月）
-事業売上: ¥0
-事業粗利: ¥0
-獲得金額: ¥0`,
+| 指標 | [先月]月結果 | [今月]月結果 | 前月差 |
+|---|---|---|---|
+| 事業売上 | ¥0 | ¥0 | ±¥0 |
+| 広告費 | ¥0 | ¥0 | ±¥0 |
+| 事業粗利 | ¥0 | ¥0 | ±¥0 |
+| 獲得金額 | ¥0 | ¥0 | ±¥0 |
+| CV数 | 0件 | 0件 | ±0件 |
+| 顧客単価 | ¥0 | ¥0 | ±¥0 |`,
       },
       {
         name: "変動要因",
@@ -147,12 +145,17 @@ export const SLIDE_STRUCTURES: Record<string, SlideStructure> = {
         name: "特記事項",
         templateId: "template05",
         role: "その他の重要情報・トピックス・今後の予定",
-        markdownFormat: `# [タイトル（例：特記事項）]
+        markdownFormat: `# 特記事項
 
-## [サブタイトル（例：注目トピックス・今後の予定）]
-- **[トピック名1]**: [説明]
-- **[トピック名2]**: [説明]
-- **[トピック名3]**: [説明]`,
+なしと書いている場合は、特記事項のスライドは飛ばしてください
+
+**[見出し1]**
+- [内容1]
+- [内容2]
+
+**[見出し2]**
+- [内容1]
+- [内容2]`,
       },
     ],
   },
@@ -263,10 +266,70 @@ export const SLIDE_STRUCTURES: Record<string, SlideStructure> = {
   },
 };
 
+export const SUMMARY_SLIDE_DEFS: SlideDefinition[] = [
+  {
+    name: "月次サマリーグラフ",
+    templateId: "template09",
+    role: "全事業の売上・粗利の月次推移スタックグラフ",
+    markdownFormat: `# 月次サマリー（[MM]月→[MM]月→[MM]月目標）
+
+## 売上
+みんなの買取: ¥X, ¥X, ¥X
+不用品回収の窓口: ¥X, ¥X, ¥X
+おそうじ合衆国: ¥X, ¥X, ¥X
+gaiheki+: ¥X, ¥X, ¥X
+解体相談所: ¥X, ¥X, ¥X
+SENBATSU: ¥X, ¥X, ¥X
+GEKITAI: ¥X, ¥X, ¥X
+
+## 粗利
+みんなの買取: ¥X, ¥X, ¥X
+不用品回収の窓口: ¥X, ¥X, ¥X
+おそうじ合衆国: ¥X, ¥X, ¥X
+gaiheki+: ¥X, ¥X, ¥X
+解体相談所: ¥X, ¥X, ¥X
+SENBATSU: ¥X, ¥X, ¥X
+GEKITAI: ¥X, ¥X, ¥X`,
+  },
+  {
+    name: "各事業サマリー",
+    templateId: "template10",
+    role: "各事業の月次一言コメント",
+    markdownFormat: `# 各事業サマリー（[MM]月）
+
+みんなの買取: [一言コメント]
+不用品回収の窓口: [一言コメント]
+おそうじ合衆国: [一言コメント]
+gaiheki+: [一言コメント]
+解体相談所: [一言コメント]
+SENBATSU: [一言コメント]
+GEKITAI: [一言コメント]`,
+  },
+  {
+    name: "メディア事業部総括",
+    templateId: "template05",
+    role: "メディア事業部全体の月次振り返りと課題",
+    markdownFormat: `# メディア事業部総括
+
+**今月の成果**
+- [成果を記入]
+- [成果を記入]
+
+**課題と対策**
+- [課題を記入]
+- [課題を記入]
+
+**来月の方針**
+- [方針を記入]`,
+  },
+];
+
 export const BUSINESS_COLORS: Record<string, { primary: string; accent: string }> = {
   不用品回収の窓口: { primary: "#FFDE35", accent: "#4ABFD7" },
   みんなの買取:     { primary: "#5969a7", accent: "#5969a7" },
-  おそうじ合衆国:   { primary: "#059669", accent: "#10b981" },
+  おそうじ合衆国:   { primary: "#47C3E6", accent: "#47C3E6" },
   "gaiheki+":       { primary: "#BB8DBE", accent: "#46C3E6" },
-  解体相談所:       { primary: "#FF5C25", accent: "#FF5C25" },
+  解体相談所:       { primary: "#546366", accent: "#546366" },
+  SENBATSU:         { primary: "#04A760", accent: "#04A760" },
+  GEKITAI:          { primary: "#FA6E31", accent: "#FA6E31" },
 };

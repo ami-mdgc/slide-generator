@@ -1,27 +1,19 @@
 import { SlideTemplateData } from "../../types/slide-template";
+import { SafeArea } from "./SlideLayout";
 
 interface Template01Data extends SlideTemplateData {
   title: string;
   date?: string;
-  summaryItems: {
-    icon?: string;
-    text: string;
-  }[];
-  metrics: {
-    label: string;
-    value: string;
-    reference?: string;
-  }[];
+  summaryItems: { icon?: string; text: string }[];
+  metrics: { label: string; value: string; reference?: string }[];
   colors?: { accent: string; primary: string };
 }
 
 function Container({ text, accent }: { text: string; accent: string }) {
   return (
-    <div className="content-stretch flex gap-[20px] h-[44px] items-center relative shrink-0 w-full" data-name="Container">
-      <div className="relative shrink-0 size-[24px]" data-name="Icon">
-        <div className="absolute inset-0" style={{ backgroundColor: accent }} />
-      </div>
-      <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#18191e] text-[36px] whitespace-normal">
+    <div className="content-stretch flex gap-[20px] min-h-[44px] items-start relative w-full" data-name="Container">
+      <div className="relative shrink-0 mt-[20px]" style={{ width: 28, height: 4, backgroundColor: '#18191e' }} data-name="Icon" />
+      <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Medium',sans-serif] leading-[1.4] not-italic relative text-[#18191e] text-[32px]">
         {text}
       </p>
     </div>
@@ -59,35 +51,37 @@ function MetricCard({ label, value, reference, accent }: { label: string; value:
 
 export default function Template01({ data }: { data: Template01Data }) {
   const accent = data.colors?.accent || '#c4ab46';
-  const primary = data.colors?.primary || '#5969a7';
 
   return (
     <div className="bg-white relative size-full" data-name="template01">
-      <div className="absolute h-[77px] left-[96px] top-[96px] w-[920px]" data-name="Heading1">
-        <p className="[word-break:break-word] absolute font-['Gen_Interface_JP_Display:Medium',sans-serif] leading-[normal] left-0 not-italic text-[#18191e] text-[64px] top-0 whitespace-nowrap">
-          {data.title}
-        </p>
-      </div>
+      <SafeArea>
+        <div className="absolute h-[77px] left-0 top-0 w-[920px]" data-name="Heading1">
+          <p className="[word-break:break-word] absolute font-['Gen_Interface_JP_Display:Medium',sans-serif] leading-[normal] left-0 not-italic text-[#18191e] text-[64px] top-0 whitespace-nowrap">
+            {data.title}
+          </p>
+        </div>
 
-      {/* Summary section */}
-      <div className="absolute bg-[#f5f5f5] content-stretch flex flex-col gap-[32px] items-start left-[96px] p-[64px] top-[227px] w-[1728px]" data-name="summary">
-        {data.summaryItems.map((item, index) => (
-          <Container key={index} text={item.text} accent={accent} />
-        ))}
-      </div>
+        {/* タイトル下からbottom-0まで flex column で24px gap固定 */}
+        <div className="absolute left-0 right-0 top-[125px] bottom-0 flex flex-col gap-[24px]">
+          <div className="bg-[#f5f5f5] flex-1 flex flex-col gap-[32px] items-start justify-center px-[64px] py-[56px] overflow-hidden" data-name="summary">
+            {data.summaryItems.map((item, index) => (
+              <Container key={index} text={item.text} accent={accent} />
+            ))}
+          </div>
 
-      {/* Metrics section */}
-      <div className="-translate-x-1/2 absolute content-stretch flex gap-[24px] items-center left-1/2 top-[605px] w-[1728px]">
-        {data.metrics.map((metric, index) => (
-          <MetricCard
-            key={index}
-            label={metric.label}
-            value={metric.value}
-            reference={metric.reference}
-            accent={accent}
-          />
-        ))}
-      </div>
+          <div className="flex gap-[24px] shrink-0" data-name="metrics">
+            {data.metrics.map((metric, index) => (
+              <MetricCard
+                key={index}
+                label={metric.label}
+                value={metric.value}
+                reference={metric.reference}
+                accent={accent}
+              />
+            ))}
+          </div>
+        </div>
+      </SafeArea>
     </div>
   );
 }

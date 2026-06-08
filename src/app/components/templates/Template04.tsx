@@ -1,14 +1,12 @@
 import { SlideTemplateData } from "../../types/slide-template";
+import { SafeArea } from "./SlideLayout";
 
 interface Template04Data extends SlideTemplateData {
   title: string;
   initiatives: {
     smallHeading: string;
     heading: string;
-    items: {
-      label: string;
-      text: string;
-    }[];
+    items: { label: string; text: string }[];
   }[];
   colors?: { accent: string; primary: string };
 }
@@ -18,41 +16,42 @@ export default function Template04({ data }: { data: Template04Data }) {
 
   return (
     <div className="bg-white relative size-full" data-name="template04">
-      <div className="absolute content-stretch flex items-center justify-center left-[96px] top-[88px]" data-name="Heading1">
-        <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#18191e] text-[64px] whitespace-nowrap">
-          {data.title}
-        </p>
-      </div>
+      <SafeArea>
+        <div className="absolute content-stretch flex items-center justify-center left-0 top-0" data-name="Heading1">
+          <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Medium',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#18191e] text-[64px] whitespace-nowrap">
+            {data.title}
+          </p>
+        </div>
 
-      <div className="-translate-x-1/2 absolute content-stretch flex gap-[48px] h-[765px] items-center left-1/2 top-[219px] w-[1728px]">
-        {data.initiatives.map((initiative, initIndex) => (
-          <div key={initIndex} className="bg-[#f5f5f5] flex-[1_0_0] h-full min-w-px relative" data-name="box02">
-            <div className="[word-break:break-word] content-stretch flex flex-col gap-[32px] items-start not-italic p-[40px] relative size-full">
-              <div className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
-                <p className="font-['Gen_Interface_JP_Display:Bold',sans-serif] leading-[1.5] relative shrink-0 text-[#18191e] text-[24px]">
-                  {initiative.smallHeading}
-                </p>
-                <p className="font-['Gen_Interface_JP_Display:SemiBold',sans-serif] leading-[normal] relative shrink-0 text-[32px]" style={{ color: accent }}>
-                  {initiative.heading}
-                </p>
-              </div>
-
-              <div className="content-stretch flex flex-col gap-[24px] items-start relative shrink-0 text-[#18191e] w-full" data-name="ul">
-                {initiative.items.map((item, itemIndex) => (
-                  <div key={itemIndex} className="content-stretch flex flex-col gap-[4px] items-start relative shrink-0 w-full" data-name="li">
-                    <p className="font-['Gen_Interface_JP_Display:Bold',sans-serif] leading-[1.5] relative shrink-0 text-[28px] whitespace-nowrap">
-                      {item.label}
-                    </p>
-                    <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Regular',sans-serif] leading-[1.5] relative text-[24px] w-full">
-                      {item.text}
-                    </p>
-                  </div>
-                ))}
+        <div className="-translate-x-1/2 absolute content-stretch flex gap-[24px] h-[763px] items-center left-1/2 top-[125px] w-full">
+          {data.initiatives.map((initiative, initIndex) => (
+            <div key={initIndex} className="bg-[#f5f5f5] flex-[1_0_0] h-full min-w-px relative" data-name="box02">
+              <div className="[word-break:break-word] content-stretch flex flex-col gap-[32px] items-start not-italic p-[32px] relative size-full">
+                <div className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
+                  <p className="font-['Gen_Interface_JP_Display:Bold',sans-serif] leading-[1.5] relative shrink-0 text-[#18191e] text-[24px]">
+                    {initiative.smallHeading}
+                  </p>
+                  <p className="font-['Gen_Interface_JP_Display:SemiBold',sans-serif] leading-[normal] relative shrink-0 text-[32px]" style={{ color: accent }}>
+                    {initiative.heading}
+                  </p>
+                </div>
+                <div className="content-stretch flex flex-col gap-[24px] items-start relative shrink-0 text-[#18191e] w-full" data-name="ul">
+                  {initiative.items.map((item, itemIndex) => (
+                    <div key={itemIndex} className="content-stretch flex flex-col gap-[4px] items-start relative shrink-0 w-full" data-name="li">
+                      <p className="font-['Gen_Interface_JP_Display:Bold',sans-serif] leading-[1.5] relative shrink-0 text-[28px] whitespace-nowrap">
+                        {item.label}
+                      </p>
+                      <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Regular',sans-serif] leading-[1.5] relative text-[28px] w-full">
+                        {item.text}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </SafeArea>
     </div>
   );
 }

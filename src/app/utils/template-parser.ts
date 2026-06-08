@@ -36,44 +36,36 @@ export function parseTemplate01Data(slide: Slide, content: string): SlideTemplat
   const titleMatch = content.match(/^#\s+(.+)$/m);
   const title = titleMatch ? titleMatch[1] : slide.title || '';
 
-  // Extract summary items (lines with bullet points or key-value pairs)
   const summaryItems: { text: string }[] = [];
   const metrics: { label: string; value: string; reference?: string }[] = [];
+
+  // metrics セクションの開始を判定（¥マーク or 既知のメトリクス名）
+  const isMetricStart = (line: string) =>
+    /^(事業売上|事業粗利|獲得金額|営業利益)[:：]/.test(line) ||
+    /[:：]\s*¥/.test(line);
 
   let currentSection = 'summary';
 
   lines.forEach(line => {
-    // Skip title line
     if (line.startsWith('#')) return;
 
-    // Detect metrics section
-    if (line.includes('事業売上') || line.includes('3月参考')) {
-      currentSection = 'metrics';
-    }
+    if (isMetricStart(line)) currentSection = 'metrics';
 
     if (currentSection === 'summary') {
-      // Parse bullet points or key-value pairs
       if (line.startsWith('-') || line.startsWith('*')) {
-        summaryItems.push({ text: line.substring(1).trim() });
-      } else if (line.includes(':')) {
+        summaryItems.push({ text: line.replace(/^[-*]\s*/, '').trim() });
+      } else {
+        // コロンあり・なしどちらもサマリーに追加
         summaryItems.push({ text: line.trim() });
       }
-    } else if (currentSection === 'metrics') {
-      // Parse metrics
+    } else {
       const metricMatch = line.match(/(.+?)[:：]\s*(.+)/);
       if (metricMatch) {
         const [, label, value] = metricMatch;
-
-        // Check if it's a reference line
         if (label.includes('参考') || label.includes('前月')) {
-          if (metrics.length > 0) {
-            metrics[metrics.length - 1].reference = line.trim();
-          }
+          if (metrics.length > 0) metrics[metrics.length - 1].reference = line.trim();
         } else {
-          metrics.push({
-            label: label.trim(),
-            value: value.trim(),
-          });
+          metrics.push({ label: label.trim(), value: value.trim() });
         }
       }
     }
@@ -85,13 +77,6 @@ export function parseTemplate01Data(slide: Slide, content: string): SlideTemplat
       label: '事業売上',
       value: '¥37,249,030',
       reference: '3月参考：¥37,249,030',
-    });
-  }
-
-  // Fill in default summary items if not enough
-  while (summaryItems.length < 3) {
-    summaryItems.push({
-      text: 'テキストテキストテキストテキストテキスト',
     });
   }
 
@@ -127,14 +112,6 @@ export function parseTemplate02Data(slide: Slide, content: string): SlideTemplat
       heading: heading,
       subheading,
       items: items.length > 0 ? items : ['テキストテキストテキスト'],
-    });
-  }
-
-  while (sections.length < 2) {
-    sections.push({
-      heading: '中見出し',
-      subheading: '小見出し',
-      items: ['テキストテキストテキスト'],
     });
   }
 
@@ -338,6 +315,85 @@ export function parseTemplate07Data(slide: Slide, content: string): SlideTemplat
   return { title, summaryItems, kpis, months, chartMetrics };
 }
 
+export function parseTemplate08Data(slide: Slide, content: string): SlideTemplateData {
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1] : slide.title || '';
+
+  const tableLines = content.split('\n').filter(l => l.trim().startsWith('|'));
+  const parseRow = (line: string) =>
+    line.split('|').slice(1, -1).map(cell => cell.trim());
+
+  const headers = tableLines.length > 0 ? parseRow(tableLines[0]) : [];
+  const rows = tableLines.length > 2 ? tableLines.slice(2).map(parseRow) : [];
+
+  return { title, headers, rows };
+}
+
+export function parseTemplate09Data(slide: Slide, content: string): SlideTemplateData {
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1] : slide.title || '';
+
+  // タイトルから月を抽出（例: 月次サマリー（4月→5月→6月目標））
+  const monthsMatch = title.match(/[（(](.+?)[）)]/);
+  const months = monthsMatch
+    ? monthsMatch[1].split(/[→\->]/).map(s => s.trim())
+    : ['先々月', '先月', '今月'];
+
+  // チャート用カラー（白背景で視認しやすい色、事業順）
+  const CHART_COLORS_LIST = ['#5969a7', '#FFDE35', '#47C3E6', '#BB8DBE', '#546366', '#04A760', '#FA6E31'];
+
+  const parseSection = (sectionContent: string) => {
+    let bizIdx = 0;
+    const result: { name: string; color: string; values: number[] }[] = [];
+    for (const line of sectionContent.split('\n')) {
+      const m = line.match(/^(.+?)[:：]\s*(.+)$/);
+      if (!m) continue;
+      const name = m[1].trim();
+      // 桁区切りカンマ（数字と数字の間）を除去してから値を分割
+      const cleaned = m[2].replace(/(\d),(\d)/g, '$1$2');
+      const values = cleaned.split(/,\s*/).map(v => parseInt(v.replace(/[¥\s]/g, ''), 10) || 0);
+      const color = CHART_COLORS_LIST[bizIdx] || '#94a3b8';
+      bizIdx++;
+      result.push({ name, color, values });
+    }
+    return result;
+  };
+
+  const sections = content.split(/^##\s+/m);
+  const revenueRaw = sections.find(s => s.startsWith('売上'));
+  const profitRaw  = sections.find(s => s.startsWith('粗利'));
+
+  return {
+    title,
+    months,
+    revenues: revenueRaw ? parseSection(revenueRaw) : [],
+    profits:  profitRaw  ? parseSection(profitRaw)  : [],
+  };
+}
+
+export function parseTemplate10Data(slide: Slide, content: string): SlideTemplateData {
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1] : slide.title || '';
+
+  const CHART_COLORS_LIST = ['#5969a7', '#FFDE35', '#47C3E6', '#BB8DBE', '#546366', '#04A760', '#FA6E31'];
+
+  let bizIdx = 0;
+  const businesses: { name: string; comment: string; color: string }[] = [];
+
+  for (const line of content.split('\n')) {
+    if (line.startsWith('#')) continue;
+    const m = line.match(/^(.+?)[:：]\s*(.+)$/);
+    if (!m) continue;
+    const name = m[1].trim();
+    const comment = m[2].trim();
+    const color = CHART_COLORS_LIST[bizIdx] || '#18191e';
+    bizIdx++;
+    businesses.push({ name, comment, color });
+  }
+
+  return { title, businesses };
+}
+
 export function parseTemplateData(
   templateId: string,
   slide: Slide,
@@ -363,6 +419,12 @@ export function parseTemplateData(
       return { ...parseTemplate06Data(slide, content), colors: c };
     case 'template07':
       return { ...parseTemplate07Data(slide, content), colors: c };
+    case 'template08':
+      return { ...parseTemplate08Data(slide, content), colors: c };
+    case 'template09':
+      return { ...parseTemplate09Data(slide, content), colors: c };
+    case 'template10':
+      return { ...parseTemplate10Data(slide, content), colors: c };
     default:
       return { title: slide.title || '', content, colors: c };
   }

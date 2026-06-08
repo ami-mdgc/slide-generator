@@ -18,7 +18,22 @@ export function SlideViewer({ slides, currentSlideIndex, onSlideChange, designSy
   const [isFullscreen, setIsFullscreen] = useState(false);
   const currentSlide = slides[currentSlideIndex];
   const containerRef = useRef<HTMLDivElement>(null);
+  const fullscreenRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+
+  const toggleFullscreen = async () => {
+    if (!document.fullscreenElement) {
+      await fullscreenRef.current?.requestFullscreen();
+    } else {
+      await document.exitFullscreen();
+    }
+  };
+
+  useEffect(() => {
+    const onFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
 
   // Use spacing from design system if available
   const padding = designSystem.spacing
@@ -35,22 +50,21 @@ export function SlideViewer({ slides, currentSlideIndex, onSlideChange, designSy
     right: "text-right",
   }[designSystem.layout.titleAlignment];
 
-  // Calculate scale based on container size
+  // Calculate scale based on container size (ResizeObserver で列幅変更にも追従)
   useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
     const updateScale = () => {
-      if (!containerRef.current) return;
-
-      const container = containerRef.current;
-      const scaleX = container.offsetWidth / 1920;
-      const scaleY = container.offsetHeight / 1080;
-      const newScale = Math.min(scaleX, scaleY);
-
-      setScale(newScale);
+      const scaleX = el.offsetWidth / 1920;
+      const scaleY = el.offsetHeight / 1080;
+      setScale(Math.min(scaleX, scaleY));
     };
 
     updateScale();
-    window.addEventListener('resize', updateScale);
-    return () => window.removeEventListener('resize', updateScale);
+    const ro = new ResizeObserver(updateScale);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [isFullscreen]);
 
   useEffect(() => {
@@ -60,7 +74,7 @@ export function SlideViewer({ slides, currentSlideIndex, onSlideChange, designSy
       } else if (e.key === "ArrowLeft" && currentSlideIndex > 0) {
         onSlideChange(currentSlideIndex - 1);
       } else if (e.key === "f") {
-        setIsFullscreen(!isFullscreen);
+        toggleFullscreen();
       }
     };
 
@@ -91,12 +105,13 @@ export function SlideViewer({ slides, currentSlideIndex, onSlideChange, designSy
       return null;
     }
 
-    // Parse markdown content to template data
+    // Parse markdown content to template data (slide-level colors take priority)
+    const colors = currentSlide.colors ?? { accent: designSystem.colors.accent, primary: designSystem.colors.primary };
     const data = parseTemplateData(
       currentSlide.templateId,
       currentSlide,
       currentSlide.content,
-      { accent: designSystem.colors.accent, primary: designSystem.colors.primary }
+      colors
     );
 
     return <TemplateComponent data={data} />;
@@ -245,96 +260,97 @@ export function SlideViewer({ slides, currentSlideIndex, onSlideChange, designSy
     return <span dangerouslySetInnerHTML={{ __html: text }} />;
   };
 
+  const navBar = (
+    <div className="border-t bg-muted/30 px-6 py-4 flex items-center justify-between flex-shrink-0">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onSlideChange(currentSlideIndex - 1)}
+        disabled={currentSlideIndex === 0}
+      >
+        <ChevronLeft className="h-4 w-4 mr-2" />
+        前へ
+      </Button>
+
+      <div className="flex items-center gap-4">
+        <span className="text-sm text-muted-foreground">
+          {currentSlideIndex + 1} / {slides.length}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleFullscreen}
+        >
+          {isFullscreen ? (
+            <Minimize2 className="h-4 w-4" />
+          ) : (
+            <Maximize2 className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onSlideChange(currentSlideIndex + 1)}
+        disabled={currentSlideIndex === slides.length - 1}
+      >
+        次へ
+        <ChevronRight className="h-4 w-4 ml-2" />
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="h-full flex items-center justify-center bg-muted/20 p-4">
+    <div
+      ref={fullscreenRef}
+      className={cn(
+        "h-full flex flex-col",
+        isFullscreen ? "bg-black" : "bg-muted/20"
+      )}
+    >
+      {/* Slide area */}
       <div
         ref={containerRef}
-        className={cn(
-          "relative rounded-lg border shadow-lg",
-          isFullscreen ? "fixed inset-0 z-50 rounded-none w-screen h-screen" : "w-full"
-        )}
-        style={{
-          aspectRatio: isFullscreen ? 'auto' : '16 / 9',
-          maxHeight: isFullscreen ? '100vh' : '100%',
-        }}
+        className="flex-1 flex items-center justify-center p-4 min-h-0"
       >
-        {/* Scaled slide content */}
         <div
-          className="absolute top-0 left-0 flex flex-col"
-          style={{
-            width: '1920px',
-            height: '1080px',
-            transform: `scale(${scale})`,
-            transformOrigin: 'top left',
-            backgroundColor: hasTemplate ? '#ffffff' : designSystem.colors.background,
-            color: designSystem.colors.text,
-            fontFamily: designSystem.fonts.body,
-          }}
+          className={cn("relative", isFullscreen ? "" : "rounded-lg border shadow-lg")}
+          style={{ width: 1920 * scale, height: 1080 * scale }}
         >
-          {/* Slide Content */}
-          {hasTemplate ? (
-            <div className="flex-1 overflow-hidden">
-              {renderTemplateSlide()}
-            </div>
-          ) : (
-            <div
-              className="flex-1 overflow-auto"
-              style={{
-                padding: padding,
-              }}
-            >
-              <div
-                className={cn("max-w-4xl mx-auto", alignmentClass)}
-                style={{
-                  gap: designSystem.spacing?.contentGap ? `${designSystem.spacing.contentGap}px` : undefined,
-                }}
-              >
-                {renderContent(currentSlide.content)}
-              </div>
-            </div>
-          )}
-
-          {/* Navigation Controls */}
-          <div className="border-t bg-muted/30 px-6 py-4 flex items-center justify-between flex-shrink-0">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onSlideChange(currentSlideIndex - 1)}
-          disabled={currentSlideIndex === 0}
-        >
-          <ChevronLeft className="h-4 w-4 mr-2" />
-          前へ
-        </Button>
-
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">
-            {currentSlideIndex + 1} / {slides.length}
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsFullscreen(!isFullscreen)}
+          {/* Scaled slide content — 1920×1080 */}
+          <div
+            className="absolute top-0 left-0"
+            style={{
+              width: 1920,
+              height: 1080,
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+              backgroundColor: hasTemplate ? '#ffffff' : designSystem.colors.background,
+              color: designSystem.colors.text,
+              fontFamily: designSystem.fonts.body,
+            }}
           >
-            {isFullscreen ? (
-              <Minimize2 className="h-4 w-4" />
+            {hasTemplate ? (
+              <div className="size-full overflow-hidden">
+                {renderTemplateSlide()}
+              </div>
             ) : (
-              <Maximize2 className="h-4 w-4" />
+              <div className="size-full overflow-auto" style={{ padding }}>
+                <div
+                  className={cn("max-w-4xl mx-auto", alignmentClass)}
+                  style={{ gap: designSystem.spacing?.contentGap ? `${designSystem.spacing.contentGap}px` : undefined }}
+                >
+                  {renderContent(currentSlide.content)}
+                </div>
+              </div>
             )}
-          </Button>
-        </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onSlideChange(currentSlideIndex + 1)}
-          disabled={currentSlideIndex === slides.length - 1}
-        >
-          次へ
-          <ChevronRight className="h-4 w-4 ml-2" />
-        </Button>
           </div>
         </div>
       </div>
+
+      {/* Nav bar — always below slide */}
+      {navBar}
     </div>
   );
 }

@@ -6,6 +6,7 @@ export interface Project {
   slideType: string;
   businessType: string;
   slides: Slide[];
+  bulkText?: string;
   createdAt: string;
   updatedAt: string;
 }

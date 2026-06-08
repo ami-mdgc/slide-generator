@@ -101,10 +101,8 @@ export function PDFExportLayer({
         {templateDef ? (
           (() => {
             const TemplateComponent = templateDef.component;
-            const data = parseTemplateData(slide.templateId!, slide, slide.content, {
-          accent: designSystem.colors.accent,
-          primary: designSystem.colors.primary,
-        });
+            const colors = slide.colors ?? { accent: designSystem.colors.accent, primary: designSystem.colors.primary };
+            const data = parseTemplateData(slide.templateId!, slide, slide.content, colors);
             return <TemplateComponent data={data} />;
           })()
         ) : (

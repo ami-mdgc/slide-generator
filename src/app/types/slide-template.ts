@@ -67,6 +67,9 @@ import Template04 from '../components/templates/Template04';
 import Template05 from '../components/templates/Template05';
 import Template06 from '../components/templates/Template06';
 import Template07 from '../components/templates/Template07';
+import Template08 from '../components/templates/Template08';
+import Template09 from '../components/templates/Template09';
+import Template10 from '../components/templates/Template10';
 
 // テンプレート定義
 export const TEMPLATE_REGISTRY: Record<string, SlideTemplate> = {
@@ -148,6 +151,36 @@ export const TEMPLATE_REGISTRY: Record<string, SlideTemplate> = {
       kpis: 'array',
       months: 'array',
       chartMetrics: 'array',
+    },
+  },
+  template08: {
+    id: 'template08',
+    name: '前月比較テーブル',
+    component: Template08,
+    dataSchema: {
+      title: 'string',
+      headers: 'array',
+      rows: 'array',
+    },
+  },
+  template09: {
+    id: 'template09',
+    name: '全社サマリーグラフ',
+    component: Template09,
+    dataSchema: {
+      title: 'string',
+      months: 'array',
+      revenues: 'array',
+      profits: 'array',
+    },
+  },
+  template10: {
+    id: 'template10',
+    name: '各事業サマリー',
+    component: Template10,
+    dataSchema: {
+      title: 'string',
+      businesses: 'array',
     },
   },
 };

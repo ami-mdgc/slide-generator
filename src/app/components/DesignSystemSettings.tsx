@@ -23,12 +23,19 @@ const buildPresets = (): DesignSystem[] =>
 interface DesignSystemSettingsProps {
   currentDesignSystem: DesignSystem;
   onDesignSystemChange: (designSystem: DesignSystem) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 type View = "presets" | "edit";
 
-export function DesignSystemSettings({ currentDesignSystem, onDesignSystemChange }: DesignSystemSettingsProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function DesignSystemSettings({ currentDesignSystem, onDesignSystemChange, open: externalOpen, onOpenChange: externalOnOpenChange }: DesignSystemSettingsProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = externalOpen ?? internalOpen;
+  const setIsOpen = (v: boolean) => {
+    setInternalOpen(v);
+    externalOnOpenChange?.(v);
+  };
   const [view, setView] = useState<View>("presets");
   const [presets, setPresets] = useState<DesignSystem[]>(buildPresets);
   const [editTarget, setEditTarget] = useState<DesignSystem | null>(null);
@@ -60,12 +67,15 @@ export function DesignSystemSettings({ currentDesignSystem, onDesignSystemChange
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setView("presets"); }}>
-      <DialogTrigger asChild>
-        <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3">
-          <Palette className="h-4 w-4" />
-          デザイン設定
-        </button>
-      </DialogTrigger>
+      {/* 外部制御されていない場合のみトリガーボタンを表示 */}
+      {externalOpen === undefined && (
+        <DialogTrigger asChild>
+          <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3">
+            <Palette className="h-4 w-4" />
+            デザイン設定
+          </button>
+        </DialogTrigger>
+      )}
 
       <DialogContent className="p-0 overflow-hidden" style={{ width: 580, height: 518, maxWidth: "none" }}>
         <div className="flex flex-col h-full">
