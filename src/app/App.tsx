@@ -388,7 +388,7 @@ export default function App() {
     });
 
     updateProject({ slides });
-    setCurrentSlideIndex(0);
+    setCurrentSlideIndex(i => Math.min(i, slides.length - 1));
   }, [currentProject, updateProject]);
 
   const handleExportAll = () => {
