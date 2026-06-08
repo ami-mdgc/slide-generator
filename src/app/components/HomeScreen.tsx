@@ -1,17 +1,18 @@
 import { useState } from "react";
-import { Plus, Trash2, Calendar, Presentation } from "lucide-react";
+import { Plus, Trash2, Calendar, Presentation, Loader2 } from "lucide-react";
 import { Project } from "../types/project";
 import { BUSINESS_COLORS } from "../data/slide-structures";
 import { cn } from "./ui/utils";
 
 interface HomeScreenProps {
   projects: Project[];
+  loading?: boolean;
   onNew: () => void;
   onOpen: (project: Project) => void;
   onDelete: (id: string) => void;
 }
 
-export function HomeScreen({ projects, onNew, onOpen, onDelete }: HomeScreenProps) {
+export function HomeScreen({ projects, loading, onNew, onOpen, onDelete }: HomeScreenProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const formatDate = (iso: string) => {
@@ -34,8 +35,10 @@ export function HomeScreen({ projects, onNew, onOpen, onDelete }: HomeScreenProp
         <div className="flex items-end justify-between mb-8">
           <div>
             <h1 className="text-xl font-semibold">プレゼンテーション</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {projects.length > 0 ? `${projects.length}件` : "まだ作成されていません"}
+            <p className="text-sm text-muted-foreground mt-0.5 flex items-center gap-1.5">
+              {loading ? (
+                <><Loader2 className="h-3 w-3 animate-spin" />読み込み中...</>
+              ) : projects.length > 0 ? `${projects.length}件` : "まだ作成されていません"}
             </p>
           </div>
           <button

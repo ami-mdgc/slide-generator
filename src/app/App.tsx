@@ -6,13 +6,42 @@ import { DesignSystemSettings } from "./components/DesignSystemSettings";
 import { HomeScreen } from "./components/HomeScreen";
 import { Slide, parseMarkdownToSlides } from "./utils/markdown-parser";
 import { DesignSystem, DEFAULT_DESIGN_SYSTEMS } from "./types/design-system";
-import { Project, loadProjects, saveProject, deleteProject } from "./types/project";
+import { Project } from "./types/project";
+import { collection, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
+import { db } from "./lib/firebase";
 import { SLIDE_STRUCTURES, BUSINESS_COLORS, SUMMARY_SLIDE_DEFS } from "./data/slide-structures";
 import { Button } from "./components/ui/button";
-import { Download, ChevronLeft, Presentation, Loader2, FileDown, Copy, Settings, Palette } from "lucide-react";
+import { Download, ChevronLeft, ChevronDown, Presentation, Loader2, FileDown, Copy, Settings, Palette } from "lucide-react";
 import { PDFExportLayer } from "./components/PDFExportLayer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./components/ui/dropdown-menu";
 
 type AppPhase = "home" | "editor";
+
+function splitSlidesByBusiness(slides: Slide[], projectName: string): { slides: Slide[]; name: string }[] {
+  const groups: { slides: Slide[]; name: string }[] = [];
+  let current: Slide[] = [];
+  let currentName = projectName;
+
+  for (const slide of slides) {
+    if (slide.templateId === "templateCover" && current.length > 0) {
+      groups.push({ slides: current, name: currentName });
+      current = [];
+      currentName = slide.title || projectName;
+    } else if (slide.templateId === "templateCover") {
+      currentName = slide.title || projectName;
+    }
+    current.push(slide);
+  }
+  if (current.length > 0) {
+    groups.push({ slides: current, name: currentName });
+  }
+  return groups;
+}
 
 const BUSINESS_TYPES = Object.keys(BUSINESS_COLORS);
 
@@ -134,16 +163,20 @@ function createNewProject(slideType: string): Project {
 
 export default function App() {
   const [phase, setPhase] = useState<AppPhase>("home");
-  const [projects, setProjects] = useState<Project[]>(() => loadProjects());
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [fsLoaded, setFsLoaded] = useState(false);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportBatch, setExportBatch] = useState<{ slides: Slide[]; name: string }[] | null>(null);
+  const [exportBatchIdx, setExportBatchIdx] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [designDialogOpen, setDesignDialogOpen] = useState(false);
   const [leftWidth, setLeftWidth] = useState(208);
   const [rightWidth, setRightWidth] = useState(352);
   const [bulkText, setBulkText] = useState("");
   const draggingRef = useRef<{ side: "left" | "right"; startX: number; startWidth: number } | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startDrag = (side: "left" | "right", e: React.MouseEvent) => {
     e.preventDefault();
@@ -178,16 +211,30 @@ export default function App() {
     localStorage.setItem("designSystem", JSON.stringify(designSystem));
   }, [designSystem]);
 
-  // Auto-save project when it changes
+  // Firestore real-time listener
   useEffect(() => {
-    if (currentProject) {
-      saveProject(currentProject);
-      setProjects(loadProjects());
-    }
+    const unsub = onSnapshot(collection(db, 'projects'), (snap) => {
+      const data = snap.docs.map(d => d.data() as Project);
+      data.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      setProjects(data);
+      setFsLoaded(true);
+    });
+    return unsub;
+  }, []);
+
+  // Auto-save to Firestore (debounced 1s)
+  useEffect(() => {
+    if (!currentProject) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      setDoc(doc(db, 'projects', currentProject.id), currentProject);
+    }, 1000);
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
   }, [currentProject]);
 
   const handleNew = () => {
     const project = createNewProject("月次総会");
+    setDoc(doc(db, 'projects', project.id), project);
     setCurrentProject(project);
     setBulkText("");
     setDesignSystem(DEFAULT_DESIGN_SYSTEMS[0]);
@@ -204,12 +251,10 @@ export default function App() {
   };
 
   const handleDelete = (id: string) => {
-    deleteProject(id);
-    setProjects(loadProjects());
+    deleteDoc(doc(db, 'projects', id));
   };
 
   const handleBack = () => {
-    setProjects(loadProjects());
     setPhase("home");
   };
 
@@ -308,8 +353,17 @@ export default function App() {
     setCurrentSlideIndex(0);
   }, [currentProject, updateProject]);
 
-  const handleExport = () => {
+  const handleExportAll = () => {
     if (!currentProject || isExporting) return;
+    setExportBatch(null);
+    setIsExporting(true);
+  };
+
+  const handleExportPerBusiness = () => {
+    if (!currentProject || isExporting) return;
+    const batch = splitSlidesByBusiness(currentProject.slides, currentProject.name);
+    setExportBatch(batch);
+    setExportBatchIdx(0);
     setIsExporting(true);
   };
 
@@ -318,6 +372,7 @@ export default function App() {
     return (
       <HomeScreen
         projects={projects}
+        loading={!fsLoaded}
         onNew={handleNew}
         onOpen={handleOpen}
         onDelete={handleDelete}
@@ -395,14 +450,29 @@ export default function App() {
             open={designDialogOpen}
             onOpenChange={setDesignDialogOpen}
           />
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
-            {isExporting ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4 mr-2" />
-            )}
-            {isExporting ? "書き出し中..." : "PDFエクスポート"}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={isExporting}>
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                {isExporting ? "書き出し中..." : "PDFエクスポート"}
+                {!isExporting && <ChevronDown className="h-3 w-3 ml-1" />}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportAll}>
+                <FileDown className="h-4 w-4 mr-2" />
+                一括書き出し
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPerBusiness}>
+                <Download className="h-4 w-4 mr-2" />
+                事業ごとに書き出し
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -459,7 +529,6 @@ export default function App() {
       {/* PDF export layer */}
       {isExporting && (
         <>
-          {/* Loading overlay — covers the slide being captured (z-index: 10) */}
           <div
             style={{ zIndex: 50 }}
             className="fixed inset-0 bg-black/60 flex flex-col items-center justify-center gap-4"
@@ -468,18 +537,31 @@ export default function App() {
               <FileDown className="h-8 w-8 text-primary animate-bounce" />
               <p className="text-base font-semibold">PDFを生成中...</p>
               <p className="text-sm text-muted-foreground">
-                {currentProject.slides.length}枚のスライドを書き出しています
+                {exportBatch
+                  ? `${exportBatchIdx + 1} / ${exportBatch.length} — ${exportBatch[exportBatchIdx].name}`
+                  : `${currentProject.slides.length}枚のスライドを書き出しています`}
               </p>
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           </div>
           <PDFExportLayer
-            slides={currentProject.slides}
-            projectName={currentProject.name}
+            key={exportBatch ? `batch-${exportBatchIdx}` : "all"}
+            slides={exportBatch ? exportBatch[exportBatchIdx].slides : currentProject.slides}
+            projectName={exportBatch ? exportBatch[exportBatchIdx].name : currentProject.name}
             designSystem={designSystem}
-            onDone={() => setIsExporting(false)}
+            onDone={() => {
+              if (exportBatch && exportBatchIdx < exportBatch.length - 1) {
+                setExportBatchIdx((i) => i + 1);
+              } else {
+                setExportBatch(null);
+                setExportBatchIdx(0);
+                setIsExporting(false);
+              }
+            }}
             onError={(err) => {
               console.error("PDF export error:", err);
+              setExportBatch(null);
+              setExportBatchIdx(0);
               setIsExporting(false);
             }}
           />
