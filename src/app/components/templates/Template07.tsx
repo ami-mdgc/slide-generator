@@ -34,8 +34,8 @@ const C_BAR_W         = 130;
 export default function Template07({ data }: { data: Template07Data }) {
   const accent      = data.colors?.accent  || "#c4ab46";
   const primary     = data.colors?.primary || "#5969a7";
-  const ACCENT_LIGHT = accent + "55";
-  void primary;
+  const PRIMARY_LIGHT = primary + "55";
+  void accent;
 
   const months = data.months.length >= 3
     ? data.months.slice(0, 3)
@@ -65,8 +65,8 @@ export default function Template07({ data }: { data: Template07Data }) {
   const revX = (i: number) => C_GX[i] - C_BAR_W / 2;
 
   const tableRows: { metric: ChartMetric | undefined; label: string; swatchColor: string; swatchBorder?: string; isLine?: boolean }[] = [
-    { metric: revenue,     label: "事業売上", swatchColor: ACCENT_LIGHT, swatchBorder: accent },
-    { metric: profit,      label: "事業粗利", swatchColor: accent },
+    { metric: revenue,     label: "事業売上", swatchColor: PRIMARY_LIGHT, swatchBorder: primary },
+    { metric: profit,      label: "事業粗利", swatchColor: primary },
     { metric: acquisition, label: "獲得金額", swatchColor: "#34D399", isLine: true },
   ];
 
@@ -130,9 +130,9 @@ export default function Template07({ data }: { data: Template07Data }) {
           return (
             <g key={i}>
               <rect x={rx} y={revTop} width={C_BAR_W} height={revH - profH}
-                fill={ACCENT_LIGHT} rx={4} />
+                fill={PRIMARY_LIGHT} rx={4} />
               <rect x={rx} y={C_BASE_Y - profH} width={C_BAR_W} height={profH}
-                fill={accent} />
+                fill={primary} />
               {/* X label */}
               <text x={C_GX[i]} y={C_BASE_Y + 32}
                 textAnchor="middle" fontSize={20} fill="#18191e"

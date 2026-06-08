@@ -70,10 +70,10 @@ export const SLIDE_STRUCTURES: Record<string, SlideStructure> = {
 - [減少要因2]`,
       },
       {
-        name: "今月のテーマと目標",
+        name: "事業別総括",
         templateId: "template03",
         role: "今月のテーマ・方針と目標KPI",
-        markdownFormat: `# [タイトル（例：今月のテーマと目標（YYYY年MM月計画））]
+        markdownFormat: `# [タイトル（例：事業別総括（YYYY年MM月計画））]
 
 ## テーマ
 [今月のテーマや方針を一言で]
