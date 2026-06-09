@@ -17,12 +17,6 @@ import { SLIDE_STRUCTURES, BUSINESS_COLORS, SUMMARY_SLIDE_DEFS } from "./data/sl
 import { Button } from "./components/ui/button";
 import { Download, ChevronLeft, ChevronDown, Presentation, Loader2, FileDown, Copy, Settings, Palette } from "lucide-react";
 import { PDFExportLayer } from "./components/PDFExportLayer";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "./components/ui/dropdown-menu";
 
 type AppPhase = "home" | "editor";
 
@@ -178,6 +172,7 @@ export default function App() {
   const [exportBatch, setExportBatch] = useState<{ slides: Slide[]; name: string }[] | null>(null);
   const [exportBatchIdx, setExportBatchIdx] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [pdfMenuOpen, setPdfMenuOpen] = useState(false);
   const [designDialogOpen, setDesignDialogOpen] = useState(false);
   const [leftWidth, setLeftWidth] = useState(208);
   const [rightWidth, setRightWidth] = useState(352);
@@ -528,29 +523,38 @@ export default function App() {
             open={designDialogOpen}
             onOpenChange={setDesignDialogOpen}
           />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" disabled={isExporting}>
-                {isExporting ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4 mr-2" />
-                )}
-                {isExporting ? "書き出し中..." : "PDFエクスポート"}
-                {!isExporting && <ChevronDown className="h-3 w-3 ml-1" />}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExportAll}>
-                <FileDown className="h-4 w-4 mr-2" />
-                一括書き出し
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPerBusiness}>
+          <div className="relative">
+            <Button variant="outline" size="sm" disabled={isExporting} onClick={() => !isExporting && setPdfMenuOpen(v => !v)}>
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
                 <Download className="h-4 w-4 mr-2" />
-                事業ごとに書き出し
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              )}
+              {isExporting ? "書き出し中..." : "PDFエクスポート"}
+              {!isExporting && <ChevronDown className="h-3 w-3 ml-1" />}
+            </Button>
+            {pdfMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setPdfMenuOpen(false)} />
+                <div className="absolute right-0 top-full mt-1 w-48 bg-card border rounded-lg shadow-lg z-20 py-1 overflow-hidden">
+                  <button
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted transition-colors text-left"
+                    onClick={() => { handleExportAll(); setPdfMenuOpen(false); }}
+                  >
+                    <FileDown className="h-4 w-4 text-muted-foreground" />
+                    一括書き出し
+                  </button>
+                  <button
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted transition-colors text-left"
+                    onClick={() => { handleExportPerBusiness(); setPdfMenuOpen(false); }}
+                  >
+                    <Download className="h-4 w-4 text-muted-foreground" />
+                    事業ごとに書き出し
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
