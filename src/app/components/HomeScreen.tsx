@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Trash2, Calendar, Presentation, Loader2, LogOut } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Plus, Trash2, Calendar, Presentation, Loader2, LogOut, MoreHorizontal, Copy } from "lucide-react";
 import { Project } from "../types/project";
 import { PresenceData } from "../lib/presence";
 import { BUSINESS_COLORS } from "../data/slide-structures";
@@ -15,12 +15,25 @@ interface HomeScreenProps {
   onNew: () => void;
   onOpen: (project: Project) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (project: Project) => void;
   onSignOut: () => void;
 }
 
-export function HomeScreen({ projects, loading, presence, currentSessionId, userName, userPhoto, onNew, onOpen, onDelete, onSignOut }: HomeScreenProps) {
+export function HomeScreen({ projects, loading, presence, currentSessionId, userName, userPhoto, onNew, onOpen, onDelete, onDuplicate, onSignOut }: HomeScreenProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
@@ -146,19 +159,50 @@ export function HomeScreen({ projects, loading, presence, currentSessionId, user
                     )}
                   </button>
 
-                  {/* Delete button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(project.id);
-                    }}
+                  {/* Three-dot menu button */}
+                  <div
+                    ref={openMenuId === project.id ? menuRef : null}
                     className={cn(
-                      "absolute top-2 right-2 p-1.5 rounded-lg bg-white/90 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shadow-sm",
-                      hoveredId === project.id ? "opacity-100" : "opacity-0 pointer-events-none"
+                      "absolute top-2 right-2 transition-all",
+                      hoveredId === project.id || openMenuId === project.id ? "opacity-100" : "opacity-0 pointer-events-none"
                     )}
                   >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(openMenuId === project.id ? null : project.id);
+                      }}
+                      className="p-1.5 rounded-lg bg-white/90 text-muted-foreground hover:text-foreground hover:bg-white transition-all shadow-sm"
+                    >
+                      <MoreHorizontal className="h-3.5 w-3.5" />
+                    </button>
+                    {openMenuId === project.id && (
+                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border rounded-lg shadow-lg z-30 py-1 overflow-hidden">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDuplicate(project);
+                            setOpenMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-left"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                          複製
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(project.id);
+                            setOpenMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-destructive/10 hover:text-destructive transition-colors text-left text-muted-foreground"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          削除
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="px-0.5">

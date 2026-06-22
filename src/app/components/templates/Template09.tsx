@@ -15,31 +15,79 @@ interface Template09Data extends SlideTemplateData {
   colors?: { accent: string; primary: string };
 }
 
+const LABEL_W = 156;               // テーブルの事業名列幅
 const CHART_W = 832;
-const CHART_H = 680;
-const PAD_L   = 72;
-const PAD_R   = 16;
-const PAD_T   = 56;
-const PAD_B   = 56;
-const INNER_W = CHART_W - PAD_L - PAD_R; // 744
-const INNER_H = CHART_H - PAD_T - PAD_B; // 568
-const BASE_Y  = PAD_T + INNER_H;         // 624
+const CHART_H = 475;
+const PAD_L   = LABEL_W + 16;     // 172 — Y軸はラベル列+16px右から開始
+const PAD_R   = 8;
+const PAD_T   = 48;
+const PAD_B   = 40;
+const INNER_W = CHART_W - PAD_L - PAD_R; // 652
+const INNER_H = CHART_H - PAD_T - PAD_B; // 387
+const BASE_Y  = PAD_T + INNER_H;         // 435
 const BAR_W   = 100;
 const GX      = [0, 1, 2].map(i => PAD_L + (INNER_W / 3) * (i + 0.5));
+const COL_W   = INNER_W / 3;      // テーブル列幅（グラフと同じ幅）
+
 
 function formatY(val: number) {
   if (val >= 100_000_000) return `${(val / 100_000_000).toFixed(1)}億`;
   return `${Math.round(val / 10_000).toLocaleString()}万`;
 }
 
+
+function BusinessTable({ businesses, showLabel = true, marginLeft = 0 }: { businesses: BusinessData[]; showLabel?: boolean; marginLeft?: number }) {
+  const tblCols = `${LABEL_W}px ${16 + marginLeft}px repeat(3, ${COL_W}px) ${PAD_R}px`;
+  return (
+    <div style={{ width: CHART_W + marginLeft, marginTop: 4 }}>
+      {businesses.map(biz => (
+        <div key={biz.name} style={{
+          display: 'grid',
+          gridTemplateColumns: tblCols,
+          borderBottom: '1px solid #f3f4f6',
+          alignItems: 'center',
+          height: 40,
+        }}>
+          {/* ラベル列 */}
+          {showLabel ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingLeft: 0 }}>
+              <div style={{ width: 10, height: 10, backgroundColor: biz.color, flexShrink: 0, borderRadius: 2 }} />
+              <span style={{ fontSize: 12, color: '#18191e', fontFamily: 'Gen Interface JP Display:Regular, sans-serif', whiteSpace: 'nowrap' }}>
+                {biz.name}
+              </span>
+            </div>
+          ) : (
+            <div />
+          )}
+          {/* 16px spacer（Y軸との隙間と揃える） */}
+          <div />
+          {/* 3ヶ月分の値 */}
+          {biz.values.slice(0, 3).map((v, i) => {
+            const man = Math.round(v / 10_000);
+            return (
+              <div key={i} style={{ textAlign: 'center', fontSize: 21, color: man > 0 ? '#18191e' : '#d1d5db', fontFamily: 'Gen Interface JP Display:SemiBold, sans-serif' }}>
+                {man > 0 ? `${man.toLocaleString()}万` : '—'}
+              </div>
+            );
+          })}
+          {/* PAD_R spacer */}
+          <div />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function StackedBarChart({
   chartTitle,
   months,
   businesses,
+  svgMarginLeft = 0,
 }: {
   chartTitle: string;
   months: string[];
   businesses: BusinessData[];
+  svgMarginLeft?: number;
 }) {
   const totals = [0, 1, 2].map(mi =>
     businesses.reduce((sum, b) => sum + (b.values[mi] ?? 0), 0)
@@ -53,7 +101,7 @@ function StackedBarChart({
   const bH = (v: number) => (v / maxTick) * INNER_H;
 
   return (
-    <svg width={CHART_W} height={CHART_H} overflow="visible">
+    <svg width={CHART_W} height={CHART_H} overflow="visible" style={{ display: 'block', marginLeft: svgMarginLeft }}>
       {/* Chart title */}
       <text x={PAD_L + INNER_W / 2} y={36}
         textAnchor="middle" fontSize={32} fill="#18191e"
@@ -88,10 +136,11 @@ function StackedBarChart({
               const h = bH(val);
               const y = BASE_Y - accH - h;
               accH += h;
-              return h > 0 ? (
+              if (h <= 0) return null;
+              return (
                 <rect key={biz.name} x={cx - BAR_W / 2} y={y} width={BAR_W} height={h}
                   fill={biz.color} />
-              ) : null;
+              );
             })}
             <text x={cx} y={BASE_Y + 36} textAnchor="middle" fontSize={20}
               fill="#18191e" fontFamily="Gen Interface JP Display:Medium, sans-serif">
@@ -105,8 +154,6 @@ function StackedBarChart({
 }
 
 export default function Template09({ data }: { data: Template09Data }) {
-  const legendBiz = data.revenues.length > 0 ? data.revenues : data.profits;
-
   return (
     <div className="bg-white relative size-full" data-name="template09">
       <SafeArea>
@@ -117,22 +164,16 @@ export default function Template09({ data }: { data: Template09Data }) {
           </p>
         </div>
 
-        {/* Two charts */}
-        <div className="absolute left-0 top-[125px] flex gap-[64px]">
-          <StackedBarChart chartTitle="売上" months={data.months} businesses={data.revenues} />
-          <StackedBarChart chartTitle="粗利" months={data.months} businesses={data.profits} />
-        </div>
-
-        {/* Legend — グラフ下中央 */}
-        <div className="absolute left-0 right-0 bottom-0 flex justify-center gap-[32px] items-center" style={{ height: 80 }}>
-          {legendBiz.map(biz => (
-            <div key={biz.name} className="flex items-center gap-[8px]">
-              <div style={{ width: 14, height: 14, backgroundColor: biz.color, flexShrink: 0, borderRadius: 2 }} />
-              <span style={{ fontSize: 22, color: '#18191e', fontFamily: 'Gen Interface JP Display:Regular, sans-serif' }}>
-                {biz.name}
-              </span>
-            </div>
-          ))}
+        {/* Two charts + tables */}
+        <div className="absolute left-0 top-[125px] flex gap-0">
+          <div>
+            <StackedBarChart chartTitle="売上" months={data.months} businesses={data.revenues} svgMarginLeft={54} />
+            <BusinessTable businesses={data.revenues} marginLeft={54} />
+          </div>
+          <div>
+            <StackedBarChart chartTitle="粗利" months={data.months} businesses={data.profits} />
+            <BusinessTable businesses={data.profits} showLabel={false} />
+          </div>
         </div>
       </SafeArea>
     </div>

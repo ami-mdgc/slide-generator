@@ -277,7 +277,11 @@ export default function App() {
 
   const handleOpen = (project: Project) => {
     setCurrentProject(project);
-    setBulkText(project.bulkText ?? "");
+    const bulk = project.bulkText
+      || (project.slides.length > 0
+        ? project.slides.map(s => s.content).join("\n\n---\n\n")
+        : "");
+    setBulkText(bulk);
     setDesignSystem(DEFAULT_DESIGN_SYSTEMS[0]);
     setCurrentSlideIndex(0);
     setPhase("editor");
@@ -285,6 +289,18 @@ export default function App() {
 
   const handleDelete = (id: string) => {
     deleteDoc(doc(db, 'projects', id));
+  };
+
+  const handleDuplicate = (project: Project) => {
+    const now = new Date().toISOString();
+    const copy: Project = {
+      ...JSON.parse(JSON.stringify(project)),
+      id: `project-${Date.now()}`,
+      name: `${project.name} のコピー`,
+      createdAt: now,
+      updatedAt: now,
+    };
+    setDoc(doc(db, 'projects', copy.id), copy).catch(console.error);
   };
 
   const handleBack = () => {
@@ -425,6 +441,7 @@ export default function App() {
         onNew={handleNew}
         onOpen={handleOpen}
         onDelete={handleDelete}
+        onDuplicate={handleDuplicate}
         onSignOut={() => signOut(auth)}
       />
     );
