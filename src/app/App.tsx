@@ -396,9 +396,7 @@ export default function App() {
 
     // 特記事項スライドでコンテンツが「なし」のみなら削除
     const slides = mapped.filter((slide) => {
-      const isSpecialNotes =
-        slide.templateId === "template05" ||
-        /^#\s*特記事項/.test(slide.content);
+      const isSpecialNotes = /^#\s*特記事項/.test(slide.content);
       if (!isSpecialNotes) return true;
       const body = slide.content.replace(/^#.+$/m, "").trim();
       return body !== "なし";

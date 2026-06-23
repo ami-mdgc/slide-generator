@@ -23,9 +23,11 @@ export default function Template05({ data }: { data: Template05Data }) {
           {data.sections.map((section, index) => (
             <div key={index} className="bg-[#f5f5f5] relative w-full" data-name="box03">
               <div className="content-stretch flex flex-col gap-[24px] items-start p-[40px] relative size-full">
-                <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:SemiBold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[36px]" style={{ color: accent }}>
-                  {section.heading}
-                </p>
+                {section.heading && (
+                  <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:SemiBold',sans-serif] leading-[normal] not-italic relative shrink-0 text-[36px]" style={{ color: accent }}>
+                    {section.heading}
+                  </p>
+                )}
                 <div className="content-stretch flex flex-col gap-[16px] items-start relative w-full">
                   {section.items.map((item, itemIndex) => (
                     item === '' ? (

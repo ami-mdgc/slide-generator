@@ -39,7 +39,7 @@ function formatY(val: number) {
 function BusinessTable({ businesses, showLabel = true, marginLeft = 0 }: { businesses: BusinessData[]; showLabel?: boolean; marginLeft?: number }) {
   const tblCols = `${LABEL_W}px ${16 + marginLeft}px repeat(3, ${COL_W}px) ${PAD_R}px`;
   return (
-    <div style={{ width: CHART_W + marginLeft, marginTop: 4 }}>
+    <div style={{ width: CHART_W + marginLeft, marginTop: 8 }}>
       {businesses.map(biz => (
         <div key={biz.name} style={{
           display: 'grid',
@@ -79,12 +79,10 @@ function BusinessTable({ businesses, showLabel = true, marginLeft = 0 }: { busin
 }
 
 function StackedBarChart({
-  chartTitle,
   months,
   businesses,
   svgMarginLeft = 0,
 }: {
-  chartTitle: string;
   months: string[];
   businesses: BusinessData[];
   svgMarginLeft?: number;
@@ -102,13 +100,6 @@ function StackedBarChart({
 
   return (
     <svg width={CHART_W} height={CHART_H} overflow="visible" style={{ display: 'block', marginLeft: svgMarginLeft }}>
-      {/* Chart title */}
-      <text x={PAD_L + INNER_W / 2} y={36}
-        textAnchor="middle" fontSize={32} fill="#18191e"
-        fontFamily="Gen Interface JP Display:SemiBold, sans-serif">
-        {chartTitle}
-      </text>
-
       {/* Grid + Y-axis labels */}
       {tickVals.map(val => {
         const y = BASE_Y - bH(val);
@@ -167,11 +158,13 @@ export default function Template09({ data }: { data: Template09Data }) {
         {/* Two charts + tables */}
         <div className="absolute left-0 top-[125px] flex gap-0">
           <div>
-            <StackedBarChart chartTitle="売上" months={data.months} businesses={data.revenues} svgMarginLeft={54} />
+            <p style={{ marginLeft: 54, fontSize: 32, fontFamily: 'Gen Interface JP Display:SemiBold, sans-serif', color: '#18191e', marginBottom: 8, backgroundColor: '#dbeafe', display: 'inline-block', padding: '2px 16px', borderRadius: 6 }}>売上</p>
+            <StackedBarChart months={data.months} businesses={data.revenues} svgMarginLeft={54} />
             <BusinessTable businesses={data.revenues} marginLeft={54} />
           </div>
           <div>
-            <StackedBarChart chartTitle="粗利" months={data.months} businesses={data.profits} />
+            <p style={{ fontSize: 32, fontFamily: 'Gen Interface JP Display:SemiBold, sans-serif', color: '#18191e', marginBottom: 8, backgroundColor: '#dcfce7', display: 'inline-block', padding: '2px 16px', borderRadius: 6 }}>粗利</p>
+            <StackedBarChart months={data.months} businesses={data.profits} />
             <BusinessTable businesses={data.profits} showLabel={false} />
           </div>
         </div>

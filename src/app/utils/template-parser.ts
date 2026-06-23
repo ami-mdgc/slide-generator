@@ -194,20 +194,31 @@ export function parseTemplate05Data(slide: Slide, content: string): SlideTemplat
   const title = titleMatch ? titleMatch[1] : slide.title || '';
 
   const sections: { heading: string; items: string[] }[] = [];
-  const blocks = content.split(/^(?=\*\*)/m);
+  const hasHeadings = /^\*\*(.+?)\*\*/m.test(content);
 
-  for (const block of blocks) {
-    const headingMatch = block.match(/^\*\*(.+?)\*\*/);
-    if (!headingMatch) continue;
-    const heading = headingMatch[1].trim();
-    const items = block
+  if (hasHeadings) {
+    // **見出し** + - 箇条書き 形式
+    const blocks = content.split(/^(?=\*\*)/m);
+    for (const block of blocks) {
+      const headingMatch = block.match(/^\*\*(.+?)\*\*/);
+      if (!headingMatch) continue;
+      const heading = headingMatch[1].trim();
+      const items = block
+        .split('\n')
+        .filter(line => line.trim().startsWith('-'))
+        .map(line => line.replace(/^-\s*/, '').trim());
+      while (items.length > 0 && items[0] === '') items.shift();
+      while (items.length > 0 && items[items.length - 1] === '') items.pop();
+      sections.push({ heading, items });
+    }
+  } else {
+    // 自由記述形式: # タイトル以外の行を平文として収集
+    const items = content
       .split('\n')
-      .filter(line => line.trim().startsWith('-'))
-      .map(line => line.replace(/^-\s*/, '').trim());
-    // Trim leading/trailing empty items
-    while (items.length > 0 && items[0] === '') items.shift();
-    while (items.length > 0 && items[items.length - 1] === '') items.pop();
-    sections.push({ heading, items });
+      .filter(line => !line.startsWith('#') && line.trim() !== '');
+    if (items.length > 0) {
+      sections.push({ heading: '', items });
+    }
   }
 
   return { title, sections };
