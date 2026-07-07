@@ -73,15 +73,18 @@ export const SLIDE_STRUCTURES: Record<string, SlideStructure> = {
         name: "事業別総括",
         templateId: "template03",
         role: "今月のテーマ・方針と目標KPI",
-        markdownFormat: `# [タイトル（例：事業別総括（YYYY年MM月計画））]
+        markdownFormat: `# [タイトル（例：今月のテーマと目標（YYYY年MM月計画））]
 
 ## テーマ
 [今月のテーマや方針を一言で]
 
 ## 目標
-- 売上目標: [値]
-- 新規顧客獲得: [件数]
-- [KPI名]: [目標値]`,
+事業売上目標: [金額]
+前月参考: [前月金額]
+事業粗利目標: [金額]
+前月参考: [前月金額]
+獲得金額目標: [金額]
+前月参考: [前月金額]`,
       },
       {
         name: "今月の施策",
@@ -130,16 +133,22 @@ export const SLIDE_STRUCTURES: Record<string, SlideStructure> = {
 事業売上: ¥0
 事業粗利: ¥0
 獲得金額: ¥0
+CV数: 0件
+顧客単価: ¥0
 
 ## 先月（MM月）
 事業売上: ¥0
 事業粗利: ¥0
 獲得金額: ¥0
+CV数: 0件
+顧客単価: ¥0
 
 ## 当月目標（MM月）
 事業売上: ¥0
 事業粗利: ¥0
-獲得金額: ¥0`,
+獲得金額: ¥0
+CV数: 0件
+顧客単価: ¥0`,
       },
       {
         name: "特記事項",
@@ -283,6 +292,15 @@ SENBATSU: ¥X, ¥X, ¥X
 GEKITAI: ¥X, ¥X, ¥X
 
 ## 粗利
+みんなの買取: ¥X, ¥X, ¥X
+不用品回収の窓口: ¥X, ¥X, ¥X
+おそうじ合衆国: ¥X, ¥X, ¥X
+gaiheki+: ¥X, ¥X, ¥X
+解体相談所: ¥X, ¥X, ¥X
+SENBATSU: ¥X, ¥X, ¥X
+GEKITAI: ¥X, ¥X, ¥X
+
+## 獲得金額
 みんなの買取: ¥X, ¥X, ¥X
 不用品回収の窓口: ¥X, ¥X, ¥X
 おそうじ合衆国: ¥X, ¥X, ¥X
