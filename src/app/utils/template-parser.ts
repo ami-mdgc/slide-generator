@@ -407,6 +407,71 @@ export function parseTemplate10Data(slide: Slide, content: string): SlideTemplat
   return { title, businesses };
 }
 
+export function parseTemplate11Data(slide: Slide, content: string): SlideTemplateData {
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1] : slide.title || '';
+
+  const parseNum = (s: string) => parseInt(s.replace(/[¥,\s]/g, ''), 10) || 0;
+  const quarters: string[] = [];
+  const metricMap: Record<string, { values: number[]; formatted: string[] }> = {};
+  const metricOrder: string[] = [];
+
+  const sectionRe = /##\s+(.+?)\n([\s\S]*?)(?=\n##|$)/g;
+  let m: RegExpExecArray | null;
+  while ((m = sectionRe.exec(content)) !== null) {
+    quarters.push(m[1].trim());
+    for (const line of m[2].split('\n').filter(l => l.trim())) {
+      const mm = line.match(/^(.+?)[:：]\s*(.+)$/);
+      if (!mm) continue;
+      const label = mm[1].trim();
+      const raw   = mm[2].trim();
+      if (!metricMap[label]) { metricMap[label] = { values: [], formatted: [] }; metricOrder.push(label); }
+      metricMap[label].values.push(parseNum(raw));
+      metricMap[label].formatted.push(raw);
+    }
+  }
+
+  const chartMetrics = metricOrder.map(label => ({ label, ...metricMap[label] }));
+  return { title, quarters, chartMetrics };
+}
+
+export function parseTemplate12Data(slide: Slide, content: string): SlideTemplateData {
+  // 各行の先頭スペースを除去して正規化
+  const normalized = content.split('\n').map(l => l.trimStart()).join('\n');
+
+  const titleMatch = normalized.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1].trim() : slide.title || '';
+
+  const CHART_COLORS_LIST = ['#5969a7', '#FFDE35', '#47C3E6', '#BB8DBE', '#546366', '#04A760', '#FA6E31'];
+
+  const parseSection = (sectionContent: string) => {
+    let bizIdx = 0;
+    const result: { name: string; color: string; values: number[] }[] = [];
+    for (const line of sectionContent.split('\n')) {
+      const m = line.match(/^(.+?)[:：]\s*(.+)$/);
+      if (!m) continue;
+      const name = m[1].trim();
+      const cleaned = m[2].replace(/(\d),(\d)/g, '$1$2');
+      const values = cleaned.split(/,\s*/).map(v => parseInt(v.replace(/[¥\s]/g, ''), 10) || 0);
+      const color = CHART_COLORS_LIST[bizIdx] || '#94a3b8';
+      bizIdx++;
+      result.push({ name, color, values });
+    }
+    return result;
+  };
+
+  const sections = normalized.split(/^##\s+/m);
+  const revenueRaw = sections.find(s => s.startsWith('売上'));
+  const profitRaw  = sections.find(s => s.startsWith('粗利'));
+
+  return {
+    title,
+    quarters: ['Q1', 'Q2', 'Q3', 'Q4'],
+    revenues: revenueRaw ? parseSection(revenueRaw) : [],
+    profits:  profitRaw  ? parseSection(profitRaw)  : [],
+  };
+}
+
 export function parseTemplateData(
   templateId: string,
   slide: Slide,
@@ -438,6 +503,10 @@ export function parseTemplateData(
       return { ...parseTemplate09Data(slide, content), colors: c };
     case 'template10':
       return { ...parseTemplate10Data(slide, content), colors: c };
+    case 'template11':
+      return { ...parseTemplate11Data(slide, content), colors: c };
+    case 'template12':
+      return { ...parseTemplate12Data(slide, content), colors: c };
     default:
       return { title: slide.title || '', content, colors: c };
   }

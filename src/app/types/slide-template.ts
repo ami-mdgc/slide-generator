@@ -70,6 +70,8 @@ import Template07 from '../components/templates/Template07';
 import Template08 from '../components/templates/Template08';
 import Template09 from '../components/templates/Template09';
 import Template10 from '../components/templates/Template10';
+import Template11 from '../components/templates/Template11';
+import Template12 from '../components/templates/Template12';
 
 // テンプレート定義
 export const TEMPLATE_REGISTRY: Record<string, SlideTemplate> = {
@@ -181,6 +183,27 @@ export const TEMPLATE_REGISTRY: Record<string, SlideTemplate> = {
     dataSchema: {
       title: 'string',
       businesses: 'array',
+    },
+  },
+  template11: {
+    id: 'template11',
+    name: '四半期推移グラフ',
+    component: Template11,
+    dataSchema: {
+      title: 'string',
+      quarters: 'array',
+      chartMetrics: 'array',
+    },
+  },
+  template12: {
+    id: 'template12',
+    name: '全事業四半期推移グラフ',
+    component: Template12,
+    dataSchema: {
+      title: 'string',
+      quarters: 'array',
+      revenues: 'array',
+      profits: 'array',
     },
   },
 };

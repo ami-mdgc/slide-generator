@@ -35,7 +35,7 @@ export default function Template07({ data }: { data: Template07Data }) {
   const accent      = data.colors?.accent  || "#c4ab46";
   const primary     = data.colors?.primary || "#5969a7";
   const PRIMARY_LIGHT = primary + "55";
-  void accent;
+
 
   const months = data.months.length >= 3
     ? data.months.slice(0, 3)
@@ -67,7 +67,7 @@ export default function Template07({ data }: { data: Template07Data }) {
   const tableRows: { metric: ChartMetric | undefined; label: string; swatchColor: string; swatchBorder?: string; isLine?: boolean }[] = [
     { metric: revenue,     label: "事業売上", swatchColor: PRIMARY_LIGHT, swatchBorder: primary },
     { metric: profit,      label: "事業粗利", swatchColor: primary },
-    { metric: acquisition, label: "獲得金額", swatchColor: "#34D399", isLine: true },
+    { metric: acquisition, label: "獲得金額", swatchColor: accent, isLine: true },
   ];
 
   return (
@@ -87,6 +87,12 @@ export default function Template07({ data }: { data: Template07Data }) {
         overflow="visible"
       >
         {/* 左Y軸グリッド・ラベル */}
+        <text x={C_LABEL_W - 8} y={C_BASE_Y - 16}
+          textAnchor="end" fontSize={18} fill="#9ca3af"
+          fontFamily="Gen Interface JP Display:Regular, sans-serif">
+          <tspan x={C_LABEL_W - 8} dy="0">（売上・</tspan>
+          <tspan x={C_LABEL_W - 8} dy="22">粗利）</tspan>
+        </text>
         {tickVals.map(val => {
           const y = C_PAD_TOP + C_CHART_H * (1 - val / maxTick);
           const label = `${(val / 10_000).toLocaleString()}万`;
@@ -106,12 +112,17 @@ export default function Template07({ data }: { data: Template07Data }) {
           stroke="#d1d5db" strokeWidth={2} />
 
         {/* 右Y軸ラベル（獲得金額） */}
+        <text x={C_CHART_RIGHT + 10} y={C_BASE_Y + 6}
+          textAnchor="start" fontSize={18} fill="#9ca3af"
+          fontFamily="Gen Interface JP Display:Regular, sans-serif">
+          （獲得）
+        </text>
         {acqTickVals.map(val => {
           const y = C_PAD_TOP + C_CHART_H * (1 - val / acqMaxTick);
           const label = `${(val / 10_000).toLocaleString()}万`;
           return (
             <text key={val} x={C_CHART_RIGHT + 10} y={y + 6}
-              textAnchor="start" fontSize={18} fill="#34D399"
+              textAnchor="start" fontSize={18} fill="#9ca3af"
               fontFamily="Gen Interface JP Display:Regular, sans-serif">
               {label}
             </text>
@@ -148,11 +159,11 @@ export default function Template07({ data }: { data: Template07Data }) {
           <>
             <polyline
               points={C_GX.map((_, i) => acqPt(i).join(",")).join(" ")}
-              fill="none" stroke="#34D399" strokeWidth={3}
+              fill="none" stroke={accent} strokeWidth={3}
             />
             {C_GX.map((_, i) => {
               const [cx, cy] = acqPt(i);
-              return <circle key={i} cx={cx} cy={cy} r={7} fill="#34D399" />;
+              return <circle key={i} cx={cx} cy={cy} r={7} fill={accent} />;
             })}
           </>
         )}

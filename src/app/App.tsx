@@ -13,7 +13,7 @@ import { getSessionId, updatePresence, clearPresence, subscribeToPresence, Prese
 import { LoginScreen } from "./components/LoginScreen";
 import { auth } from "./lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { SLIDE_STRUCTURES, BUSINESS_COLORS, SUMMARY_SLIDE_DEFS } from "./data/slide-structures";
+import { SLIDE_STRUCTURES, BUSINESS_COLORS, SUMMARY_SLIDE_DEFS, QUARTERLY_SUMMARY_SLIDE_DEFS } from "./data/slide-structures";
 import { Button } from "./components/ui/button";
 import { Download, ChevronLeft, ChevronDown, Presentation, Loader2, FileDown, Copy, Settings, Palette } from "lucide-react";
 import { PDFExportLayer } from "./components/PDFExportLayer";
@@ -94,6 +94,9 @@ function createNewProject(slideType: string): Project {
         content = `# ${businessType}\n\n${slideType}\n\n${dateStr}`;
       } else if (def.templateId === "template07") {
         content = `# 事業数字の推移\n\n## ${makeMonth(-2)}\n事業売上: ¥0\n事業粗利: ¥0\n獲得金額: ¥0\n\n## ${makeMonth(-1)}\n事業売上: ¥0\n事業粗利: ¥0\n獲得金額: ¥0\n\n## ${makeMonth(0)}（目標）\n事業売上: ¥0\n事業粗利: ¥0\n獲得金額: ¥0`;
+      } else if (def.templateId === "template11") {
+        const year = today.getFullYear();
+        content = `# 直近1年の売上・粗利推移\n\n## Q1（${year}年1〜3月）\n事業売上: ¥42,500,000\n事業粗利: ¥12,750,000\n\n## Q2（${year}年4〜6月）\n事業売上: ¥38,200,000\n事業粗利: ¥11,460,000\n\n## Q3（${year}年7〜9月）\n事業売上: ¥45,800,000\n事業粗利: ¥13,740,000\n\n## Q4（${year}年10〜12月）\n事業売上: ¥51,300,000\n事業粗利: ¥15,390,000`;
       } else {
         content = `# ${def.name}\n\n内容を入力してください`;
       }
@@ -112,6 +115,28 @@ function createNewProject(slideType: string): Project {
   // ── サマリーセクション ──
   const summaryColors = { primary: "#1A1A1A", accent: "#1A1A1A" };
   const summaryBase = allSlides.length;
+
+  const quarterlyExtraSlides: Slide[] = slideType === "四半期報告"
+    ? QUARTERLY_SUMMARY_SLIDE_DEFS.map((def, i) => {
+        let content: string;
+        if (def.templateId === "template12") {
+          const bizLine = (vals: string) =>
+            `みんなの買取: ${vals}\n不用品回収の窓口: ${vals}\nおそうじ合衆国: ${vals}\ngaiheki+: ${vals}\n解体相談所: ${vals}\nSENBATSU: ${vals}\nGEKITAI: ${vals}`;
+          content = `# 直近1年の売上・粗利推移（全事業）\n\n## 売上\n${bizLine("¥0, ¥0, ¥0, ¥0")}\n\n## 粗利\n${bizLine("¥0, ¥0, ¥0, ¥0")}`;
+        } else {
+          content = `# ${def.name}\n\n内容を入力してください`;
+        }
+        return {
+          id: `slide-${summaryBase + 1 + i}`,
+          content,
+          title: def.name,
+          templateId: def.templateId,
+          slideType,
+          colors: summaryColors,
+        };
+      })
+    : [];
+
   const summarySlides: Slide[] = [
     {
       id: `slide-${summaryBase}`,
@@ -145,6 +170,10 @@ function createNewProject(slideType: string): Project {
         colors: summaryColors,
       };
     }),
+    ...quarterlyExtraSlides.map((s, i) => ({
+      ...s,
+      id: `slide-${summaryBase + 1 + SUMMARY_SLIDE_DEFS.length + i}`,
+    })),
   ];
 
   const now = new Date().toISOString();
@@ -265,9 +294,9 @@ export default function App() {
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
   }, [currentProject]);
 
-  const handleNew = () => {
-    const project = createNewProject("月次総会");
-    setDoc(doc(db, 'projects', project.id), project);
+  const handleNew = (slideType: string = "月次総会") => {
+    const project = createNewProject(slideType);
+    setDoc(doc(db, 'projects', project.id), JSON.parse(JSON.stringify(project)));
     setCurrentProject(project);
     setBulkText("");
     setDesignSystem(DEFAULT_DESIGN_SYSTEMS[0]);
@@ -361,6 +390,7 @@ export default function App() {
     setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1));
   };
 
+
   const handleBulkUpdate = useCallback((markdown: string) => {
     if (!currentProject) return;
     const parsed = parseMarkdownToSlides(markdown);
@@ -387,10 +417,23 @@ export default function App() {
         isSummary = true;
         return { ...slide, id: `slide-${i}`, templateId: "templateCover", colors: currentColors };
       } else {
-        // サマリー: SUMMARY_SLIDE_DEFS[0]から、通常事業: slideDefs[1]から（[0]は表紙）
-        const def = isSummary ? SUMMARY_SLIDE_DEFS[bizSlideCount] : slideDefs[bizSlideCount + 1];
+        // サマリー: SUMMARY_SLIDE_DEFS + 四半期報告なら QUARTERLY_SUMMARY_SLIDE_DEFS、通常事業: slideDefs[1]から（[0]は表紙）
+        const summaryDefs = [
+          ...SUMMARY_SLIDE_DEFS,
+          ...(currentProject.slideType === "四半期報告" ? QUARTERLY_SUMMARY_SLIDE_DEFS : []),
+        ];
+        const def = isSummary ? summaryDefs[bizSlideCount] : slideDefs[bizSlideCount + 1];
         bizSlideCount++;
-        return { ...slide, id: `slide-${i}`, templateId: def?.templateId || slide.templateId, colors: currentColors };
+        // 位置ベースで決まらない場合はコンテンツパターンで判定
+        let templateId = def?.templateId || slide.templateId;
+        if (!templateId) {
+          if (/##\s+Q[1-4]/.test(slide.content) && /事業売上/.test(slide.content)) {
+            templateId = "template11";
+          } else if (/##\s+売上/.test(slide.content) && /##\s+粗利/.test(slide.content) && /みんなの買取/.test(slide.content)) {
+            templateId = "template12";
+          }
+        }
+        return { ...slide, id: `slide-${i}`, templateId, colors: currentColors };
       }
     });
 
@@ -500,6 +543,16 @@ export default function App() {
         })()}
 
         <div className="ml-auto flex items-center gap-2">
+          {/* スライドタイプ */}
+          <select
+            value={currentProject.slideType || "月次総会"}
+            onChange={(e) => setCurrentProject(p => p ? { ...p, slideType: e.target.value } : p)}
+            className="h-8 rounded-md border border-input bg-background px-2.5 text-sm font-medium hover:bg-accent cursor-pointer"
+          >
+            <option value="月次総会">通常</option>
+            <option value="四半期報告">四半期</option>
+          </select>
+
           {/* 設定ドロップダウン */}
           <div className="relative">
             <Button variant="outline" size="sm" onClick={() => setSettingsOpen(v => !v)}>

@@ -12,7 +12,7 @@ interface HomeScreenProps {
   currentSessionId: string;
   userName?: string;
   userPhoto?: string;
-  onNew: () => void;
+  onNew: (slideType: string) => void;
   onOpen: (project: Project) => void;
   onDelete: (id: string) => void;
   onDuplicate: (project: Project) => void;
@@ -20,6 +20,7 @@ interface HomeScreenProps {
 }
 
 export function HomeScreen({ projects, loading, presence, currentSessionId, userName, userPhoto, onNew, onOpen, onDelete, onDuplicate, onSignOut }: HomeScreenProps) {
+  const [selectedSlideType, setSelectedSlideType] = useState("月次総会");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -90,18 +91,28 @@ export function HomeScreen({ projects, loading, presence, currentSessionId, user
               ) : projects.length > 0 ? `${projects.length}件` : "まだ作成されていません"}
             </p>
           </div>
-          <button
-            onClick={onNew}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#1A1A1A] text-white text-sm font-medium rounded-lg hover:bg-[#333333] transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            新規作成
-          </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedSlideType}
+              onChange={(e) => setSelectedSlideType(e.target.value)}
+              className="h-9 rounded-lg border border-input bg-background px-2.5 text-sm cursor-pointer"
+            >
+              <option value="月次総会">通常</option>
+              <option value="四半期報告">四半期</option>
+            </select>
+            <button
+              onClick={() => onNew(selectedSlideType)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#1A1A1A] text-white text-sm font-medium rounded-lg hover:bg-[#333333] transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              新規作成
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
           {/* New card */}
-          <button onClick={onNew} className="flex flex-col gap-2.5 group">
+          <button onClick={() => onNew(selectedSlideType)} className="flex flex-col gap-2.5 group">
             <div className="aspect-[4/3] border-2 border-dashed border-border rounded-xl flex items-center justify-center transition-all group-hover:border-[#1A1A1A] group-hover:bg-[#1A1A1A]/8">
               <Plus className="h-7 w-7 text-muted-foreground/50 group-hover:text-white transition-colors" />
             </div>
