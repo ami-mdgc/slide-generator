@@ -19,7 +19,7 @@ export default function Template05({ data }: { data: Template05Data }) {
           </p>
         </div>
 
-        <div className="-translate-x-1/2 absolute content-stretch flex flex-col gap-[32px] items-start left-1/2 top-[125px] w-full">
+        <div className="-translate-x-1/2 absolute content-stretch flex flex-col gap-[24px] items-start left-1/2 top-[125px] w-full">
           {data.sections.map((section, index) => (
             <div key={index} className="bg-[#f5f5f5] relative w-full" data-name="box03">
               <div className="content-stretch flex flex-col gap-[24px] items-start p-[40px] relative size-full">
