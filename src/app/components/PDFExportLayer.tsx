@@ -4,6 +4,7 @@ import { Slide } from "../utils/markdown-parser";
 import { DesignSystem } from "../types/design-system";
 import { TEMPLATE_REGISTRY } from "../types/slide-template";
 import { parseTemplateData } from "../utils/template-parser";
+import { BUSINESS_COLORS } from "../data/slide-structures";
 import { toCanvas } from "html-to-image";
 import jsPDF from "jspdf";
 
@@ -101,7 +102,9 @@ export function PDFExportLayer({
         {templateDef ? (
           (() => {
             const TemplateComponent = templateDef.component;
-            const colors = slide.colors ?? { accent: designSystem.colors.accent, primary: designSystem.colors.primary };
+            const storedColors = slide.colors ?? { accent: designSystem.colors.accent, primary: designSystem.colors.primary };
+            const matchingBiz = Object.values(BUSINESS_COLORS).find(c => c.primary === storedColors.primary && c.accent === storedColors.accent);
+            const colors = { ...storedColors, acquisitionColor: (storedColors as any).acquisitionColor ?? matchingBiz?.acquisitionColor };
             const data = parseTemplateData(slide.templateId!, slide, slide.content, colors);
             return <TemplateComponent data={data} />;
           })()

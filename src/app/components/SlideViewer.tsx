@@ -5,6 +5,7 @@ import { Slide } from "../utils/markdown-parser";
 import { DesignSystem } from "../types/design-system";
 import { TEMPLATE_REGISTRY } from "../types/slide-template";
 import { parseTemplateData } from "../utils/template-parser";
+import { BUSINESS_COLORS } from "../data/slide-structures";
 import { cn } from "./ui/utils";
 
 interface SlideViewerProps {
@@ -106,7 +107,9 @@ export function SlideViewer({ slides, currentSlideIndex, onSlideChange, designSy
     }
 
     // Parse markdown content to template data (slide-level colors take priority)
-    const colors = currentSlide.colors ?? { accent: designSystem.colors.accent, primary: designSystem.colors.primary };
+    const storedColors = currentSlide.colors ?? { accent: designSystem.colors.accent, primary: designSystem.colors.primary };
+    const matchingBiz = Object.values(BUSINESS_COLORS).find(c => c.primary === storedColors.primary && c.accent === storedColors.accent);
+    const colors = { ...storedColors, acquisitionColor: (storedColors as any).acquisitionColor ?? matchingBiz?.acquisitionColor };
     const data = parseTemplateData(
       currentSlide.templateId,
       currentSlide,
