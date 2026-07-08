@@ -444,13 +444,21 @@ export function parseTemplate12Data(slide: Slide, content: string): SlideTemplat
 
   const CHART_COLORS_LIST = ['#5969a7', '#FFDE35', '#47C3E6', '#BB8DBE', '#546366', '#04A760', '#FA6E31'];
 
+  // タイトルより後・##より前にあるカンマ区切り行からクォーターラベルを抽出
+  const preamble = normalized.split(/^##\s/m)[0];
+  const labelsLine = preamble.split('\n').find(l => l.trim() && !l.startsWith('#'));
+  const quarters = labelsLine
+    ? labelsLine.split(/,\s*/).map(q => q.trim()).filter(Boolean)
+    : ['Q1', 'Q2', 'Q3', 'Q4'];
+
   const parseSection = (sectionContent: string) => {
     let bizIdx = 0;
     const result: { name: string; color: string; values: number[] }[] = [];
     for (const line of sectionContent.split('\n')) {
       const m = line.match(/^(.+?)[:：]\s*(.+)$/);
       if (!m) continue;
-      const name = m[1].trim();
+      // 行頭の "- " を除去
+      const name = m[1].replace(/^-\s*/, '').trim();
       const cleaned = m[2].replace(/(\d),(\d)/g, '$1$2');
       const values = cleaned.split(/,\s*/).map(v => parseInt(v.replace(/[¥\s]/g, ''), 10) || 0);
       const color = CHART_COLORS_LIST[bizIdx] || '#94a3b8';
@@ -466,7 +474,7 @@ export function parseTemplate12Data(slide: Slide, content: string): SlideTemplat
 
   return {
     title,
-    quarters: ['Q1', 'Q2', 'Q3', 'Q4'],
+    quarters,
     revenues: revenueRaw ? parseSection(revenueRaw) : [],
     profits:  profitRaw  ? parseSection(profitRaw)  : [],
   };
@@ -476,7 +484,7 @@ export function parseTemplateData(
   templateId: string,
   slide: Slide,
   content: string,
-  colors?: { accent: string; primary: string }
+  colors?: { accent: string; primary: string; acquisitionColor?: string }
 ): SlideTemplateData {
   const c = colors || { accent: '#c4ab46', primary: '#5969a7' };
 

@@ -481,10 +481,10 @@ GEKITAI: ¥0, ¥0, ¥0, ¥0`,
   },
 ];
 
-export const BUSINESS_COLORS: Record<string, { primary: string; accent: string }> = {
+export const BUSINESS_COLORS: Record<string, { primary: string; accent: string; acquisitionColor?: string }> = {
   不用品回収の窓口: { primary: "#FFDE35", accent: "#4ABFD7" },
-  みんなの買取:     { primary: "#5969a7", accent: "#5969a7" },
-  おそうじ合衆国:   { primary: "#47C3E6", accent: "#47C3E6" },
+  みんなの買取:     { primary: "#5969a7", accent: "#5969a7", acquisitionColor: "#C4AB46" },
+  おそうじ合衆国:   { primary: "#47C3E6", accent: "#47C3E6", acquisitionColor: "#FF4F70" },
   "gaiheki+":       { primary: "#BB8DBE", accent: "#46C3E6" },
   解体相談所:       { primary: "#546366", accent: "#FF5C25" },
   SENBATSU:         { primary: "#04A760", accent: "#04A760" },

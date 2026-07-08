@@ -13,7 +13,7 @@ interface Template07Data extends SlideTemplateData {
   kpis: { label: string; value: string; reference?: string }[];
   months: string[];
   chartMetrics: ChartMetric[];
-  colors?: { accent: string; primary: string };
+  colors?: { accent: string; primary: string; acquisitionColor?: string };
 }
 
 // ── Chart constants ─────────────────────────
@@ -34,6 +34,7 @@ const C_BAR_W         = 130;
 export default function Template07({ data }: { data: Template07Data }) {
   const accent      = data.colors?.accent  || "#c4ab46";
   const primary     = data.colors?.primary || "#5969a7";
+  const acqColor    = data.colors?.acquisitionColor ?? accent;
   const PRIMARY_LIGHT = primary + "55";
 
 
@@ -67,7 +68,7 @@ export default function Template07({ data }: { data: Template07Data }) {
   const tableRows: { metric: ChartMetric | undefined; label: string; swatchColor: string; swatchBorder?: string; isLine?: boolean }[] = [
     { metric: revenue,     label: "事業売上", swatchColor: PRIMARY_LIGHT, swatchBorder: primary },
     { metric: profit,      label: "事業粗利", swatchColor: primary },
-    { metric: acquisition, label: "獲得金額", swatchColor: accent, isLine: true },
+    { metric: acquisition, label: "獲得金額", swatchColor: acqColor, isLine: true },
   ];
 
   return (
@@ -86,6 +87,16 @@ export default function Template07({ data }: { data: Template07Data }) {
         style={{ position: "absolute", left: 0, top: 125 }}
         overflow="visible"
       >
+        <defs>
+          <pattern id="hatch-light" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)">
+            <rect width="10" height="10" fill="white" />
+            <rect width="5" height="10" fill={PRIMARY_LIGHT} />
+          </pattern>
+          <pattern id="hatch-solid" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)">
+            <rect width="10" height="10" fill="white" />
+            <rect width="5" height="10" fill={primary} />
+          </pattern>
+        </defs>
         {/* 左Y軸グリッド・ラベル */}
         <text x={C_LABEL_W - 8} y={C_BASE_Y - 16}
           textAnchor="end" fontSize={18} fill="#9ca3af"
@@ -141,9 +152,9 @@ export default function Template07({ data }: { data: Template07Data }) {
           return (
             <g key={i}>
               <rect x={rx} y={revTop} width={C_BAR_W} height={revH - profH}
-                fill={PRIMARY_LIGHT} rx={4} />
+                fill={i === 2 ? "url(#hatch-light)" : PRIMARY_LIGHT} rx={4} />
               <rect x={rx} y={C_BASE_Y - profH} width={C_BAR_W} height={profH}
-                fill={primary} />
+                fill={i === 2 ? "url(#hatch-solid)" : primary} />
               {/* X label */}
               <text x={C_GX[i]} y={C_BASE_Y + 32}
                 textAnchor="middle" fontSize={20} fill="#18191e"
@@ -154,19 +165,23 @@ export default function Template07({ data }: { data: Template07Data }) {
           );
         })}
 
-        {/* 折れ線（獲得金額）*/}
-        {acquisition && acqVals.length >= 2 && (
-          <>
-            <polyline
-              points={C_GX.map((_, i) => acqPt(i).join(",")).join(" ")}
-              fill="none" stroke={accent} strokeWidth={3}
-            />
-            {C_GX.map((_, i) => {
-              const [cx, cy] = acqPt(i);
-              return <circle key={i} cx={cx} cy={cy} r={7} fill={accent} />;
-            })}
-          </>
-        )}
+        {/* 折れ線（獲得金額）：先月→当月目標の区間を点線 */}
+        {acquisition && acqVals.length >= 2 && (() => {
+          const pts = C_GX.map((_, i) => acqPt(i));
+          return (
+            <>
+              {/* 先々月→先月：実線 */}
+              <line x1={pts[0][0]} y1={pts[0][1]} x2={pts[1][0]} y2={pts[1][1]}
+                stroke={acqColor} strokeWidth={3} fill="none" />
+              {/* 先月→当月目標：点線 */}
+              <line x1={pts[1][0]} y1={pts[1][1]} x2={pts[2][0]} y2={pts[2][1]}
+                stroke={acqColor} strokeWidth={3} fill="none" strokeDasharray="10 6" />
+              {pts.map(([cx, cy], i) => (
+                <circle key={i} cx={cx} cy={cy} r={7} fill={acqColor} />
+              ))}
+            </>
+          );
+        })()}
       </svg>
 
       {/* ── TABLE ──────────────────────────────────────────── */}

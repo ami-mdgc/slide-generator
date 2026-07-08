@@ -13,6 +13,14 @@ export default function Template08({ data }: { data: Template08Data }) {
   const primary = data.colors?.primary || '#5969a7';
   const { headers, rows } = data;
 
+  const headerTextColor = (() => {
+    const hex = primary.replace('#', '');
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 128 ? '#000000' : '#ffffff';
+  })();
+
   // 「差」を含む列インデックスを差分列として扱う
   const diffColIndex = headers.findIndex(h => h.includes('差'));
 
@@ -47,8 +55,8 @@ export default function Template08({ data }: { data: Template08Data }) {
                 {headers.map((h, i) => (
                   <th
                     key={i}
-                    className="text-left px-[40px] font-['Gen_Interface_JP_Display:SemiBold',sans-serif] text-white"
-                    style={{ backgroundColor: primary, verticalAlign: 'middle', height: headerHeight, boxSizing: 'border-box', fontSize: i === 0 ? 32 : 36 }}
+                    className="text-left px-[40px] font-['Gen_Interface_JP_Display:SemiBold',sans-serif]"
+                    style={{ backgroundColor: primary, color: headerTextColor, verticalAlign: 'middle', height: headerHeight, boxSizing: 'border-box', fontSize: i === 0 ? 32 : 36 }}
                   >
                     {h}
                   </th>

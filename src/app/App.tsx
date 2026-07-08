@@ -400,7 +400,7 @@ export default function App() {
     const businessNames = Object.keys(BUSINESS_COLORS);
     const slideDefs = SLIDE_STRUCTURES[currentProject.slideType || "月次総会"]?.slides ?? [];
 
-    let currentColors = SUMMARY_COLORS as { primary: string; accent: string };
+    let currentColors = SUMMARY_COLORS as { primary: string; accent: string; acquisitionColor?: string };
     let bizSlideCount = 0;
     let isSummary = false;
 
@@ -424,14 +424,12 @@ export default function App() {
         ];
         const def = isSummary ? summaryDefs[bizSlideCount] : slideDefs[bizSlideCount + 1];
         bizSlideCount++;
-        // 位置ベースで決まらない場合はコンテンツパターンで判定
+        // template11/12はコンテンツパターンで必ず確定（特記事項省略等による位置ズレを防ぐ）
         let templateId = def?.templateId || slide.templateId;
-        if (!templateId) {
-          if (/##\s+Q[1-4]/.test(slide.content) && /事業売上/.test(slide.content)) {
-            templateId = "template11";
-          } else if (/##\s+売上/.test(slide.content) && /##\s+粗利/.test(slide.content) && /みんなの買取/.test(slide.content)) {
-            templateId = "template12";
-          }
+        if (/##\s+Q[1-4]/.test(slide.content) && /事業売上/.test(slide.content)) {
+          templateId = "template11";
+        } else if (/##\s+売上/.test(slide.content) && /##\s+粗利/.test(slide.content) && /みんなの買取/.test(slide.content)) {
+          templateId = "template12";
         }
         return { ...slide, id: `slide-${i}`, templateId, colors: currentColors };
       }
