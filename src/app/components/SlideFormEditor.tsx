@@ -55,26 +55,46 @@ function CoverFormFields({ content, onUpdate }: { content: string; onUpdate: (s:
 
 // --- template01 ---
 interface KpiRow { name: string; value: string; }
-interface T01Form { title: string; kpis: KpiRow[]; revenue: string; prevMonth: string; }
+interface MetricRow { name: string; value: string; reference: string; target: string; }
+interface T01Form { title: string; kpis: KpiRow[]; metrics: MetricRow[]; }
+
+const DEFAULT_METRIC_NAMES = ["事業売上", "事業粗利", "獲得金額"];
 
 function parseT01(c: string): T01Form {
   const title = c.match(/^#\s+(.+)$/m)?.[1] ?? "";
   const kpis: KpiRow[] = [];
-  let revenue = "";
-  let prevMonth = "";
+  const metrics: MetricRow[] = [];
+  const isMetricStart = (l: string) => /^(事業売上|事業粗利|獲得金額|営業利益)[:：]/.test(l) || /[:：]\s*¥/.test(l);
+  let inMetrics = false;
   for (const line of c.split("\n")) {
     if (!line.trim() || line.startsWith("#")) continue;
-    if (/^事業売上/.test(line)) { revenue = line.replace(/^[^:：]+[:：]\s*/, ""); continue; }
-    if (/^前月/.test(line)) { prevMonth = line.replace(/^[^:：]+[:：]\s*/, ""); continue; }
+    if (isMetricStart(line)) inMetrics = true;
+    if (!inMetrics) {
+      if (line.startsWith("-") || line.startsWith("*")) kpis.push({ name: "", value: line.replace(/^[-*]\s*/, "").trim() });
+      continue;
+    }
     const m = line.match(/^(.+?)[:：]\s*(.+)$/);
-    if (m && kpis.length < 3) kpis.push({ name: m[1].trim(), value: m[2].trim() });
+    if (!m) continue;
+    const label = m[1].trim();
+    const value = m[2].trim();
+    if (label === '目標') {
+      if (metrics.length > 0) metrics[metrics.length - 1].target = value;
+    } else if (label.includes('参考') || label.includes('前月')) {
+      if (metrics.length > 0) metrics[metrics.length - 1].reference = value;
+    } else if (metrics.length < 3) {
+      metrics.push({ name: label, value, reference: "", target: "" });
+    }
   }
   while (kpis.length < 3) kpis.push({ name: "", value: "" });
-  return { title, kpis: kpis.slice(0, 3), revenue, prevMonth };
+  while (metrics.length < 3) metrics.push({ name: DEFAULT_METRIC_NAMES[metrics.length] ?? "", value: "", reference: "", target: "" });
+  return { title, kpis: kpis.slice(0, 3), metrics: metrics.slice(0, 3) };
 }
 function serializeT01(f: T01Form): string {
-  const kpiLines = f.kpis.map(k => `${k.name}: ${k.value}`).join("\n");
-  return `# ${f.title}\n\n${kpiLines}\n\n事業売上: ${f.revenue}\n前月参考: ${f.prevMonth}`;
+  const kpiLines = f.kpis.filter(k => k.value).map(k => `- ${k.value}`).join("\n");
+  const metricLines = f.metrics.map(m =>
+    `${m.name}: ${m.value}\n前月参考: ${m.reference}\n目標: ${m.target}`
+  ).join("\n");
+  return `# ${f.title}\n\n${kpiLines}\n\n${metricLines}`;
 }
 
 function T01FormFields({ content, onUpdate }: { content: string; onUpdate: (s: string) => void }) {
@@ -89,20 +109,36 @@ function T01FormFields({ content, onUpdate }: { content: string; onUpdate: (s: s
     const kpis = f.kpis.map((k, idx) => idx === i ? { ...k, ...patch } : k);
     upd({ kpis });
   };
+  const updMetric = (i: number, patch: Partial<MetricRow>) => {
+    const metrics = f.metrics.map((m, idx) => idx === i ? { ...m, ...patch } : m);
+    upd({ metrics });
+  };
   return (
     <div className="space-y-5">
       <div><FL>タイトル</FL><Input value={f.title} onChange={e => upd({ title: e.target.value })} /></div>
-      <FSection title="KPI">
+      <FSection title="振り返りポイント">
         {f.kpis.map((kpi, i) => (
-          <FRow key={i}>
-            <Input className="flex-1" value={kpi.name} onChange={e => updKpi(i, { name: e.target.value })} placeholder={`KPI名${i + 1}`} />
-            <Input className="w-28" value={kpi.value} onChange={e => updKpi(i, { value: e.target.value })} placeholder="実績値" />
-          </FRow>
+          <Input key={i} value={kpi.value} onChange={e => updKpi(i, { value: e.target.value })} placeholder={`振り返り${i + 1}`} />
         ))}
       </FSection>
-      <FSection title="売上">
-        <div><FL>事業売上</FL><Input value={f.revenue} onChange={e => upd({ revenue: e.target.value })} placeholder="¥0" /></div>
-        <div><FL>前月参考</FL><Input value={f.prevMonth} onChange={e => upd({ prevMonth: e.target.value })} placeholder="¥0" /></div>
+      <FSection title="実績KPI">
+        {f.metrics.map((m, i) => (
+          <div key={i} className="space-y-1.5 p-2.5 rounded-lg bg-muted/40">
+            <p className="text-xs font-medium text-muted-foreground">{m.name}</p>
+            <FRow>
+              <span className="text-xs text-muted-foreground whitespace-nowrap self-center">実績</span>
+              <Input className="flex-1" value={m.value} onChange={e => updMetric(i, { value: e.target.value })} placeholder="¥0" />
+            </FRow>
+            <FRow>
+              <span className="text-xs text-muted-foreground whitespace-nowrap self-center">前月参考</span>
+              <Input className="flex-1" value={m.reference} onChange={e => updMetric(i, { reference: e.target.value })} placeholder="¥0" />
+            </FRow>
+            <FRow>
+              <span className="text-xs text-muted-foreground whitespace-nowrap self-center">目標</span>
+              <Input className="flex-1" value={m.target} onChange={e => updMetric(i, { target: e.target.value })} placeholder="¥0" />
+            </FRow>
+          </div>
+        ))}
       </FSection>
     </div>
   );
@@ -166,21 +202,32 @@ function T02FormFields({ content, onUpdate }: { content: string; onUpdate: (s: s
 }
 
 // --- template03 ---
-interface T03Form { title: string; theme: string; goals: KpiRow[]; }
+interface GoalRow { name: string; value: string; projected: string; }
+interface T03Form { title: string; theme: string; goals: GoalRow[]; }
 
 function parseT03(c: string): T03Form {
   const title = c.match(/^#\s+(.+)$/m)?.[1] ?? "";
   const theme = c.match(/##\s*テーマ\s*\n(.+)/)?.[1]?.trim() ?? "";
-  const goals: KpiRow[] = [];
+  const goals: GoalRow[] = [];
   const goalSection = c.match(/##\s*目標\s*\n([\s\S]+)/)?.[1] ?? "";
-  for (const m of goalSection.matchAll(/[-*]\s*(.+?)[:：]\s*(.+)/g)) {
-    if (goals.length < 3) goals.push({ name: m[1].trim(), value: m[2].trim() });
+  for (const line of goalSection.split("\n")) {
+    const m = line.match(/^[-*]?\s*(.+?)[:：]\s*(.+)$/);
+    if (!m) continue;
+    const label = m[1].trim();
+    const value = m[2].trim();
+    if (label.includes('想定着地')) {
+      if (goals.length > 0) goals[goals.length - 1].projected = value;
+    } else if (!label.includes('参考') && !label.includes('前月')) {
+      if (goals.length < 3) goals.push({ name: label, value, projected: "" });
+    }
   }
-  while (goals.length < 3) goals.push({ name: "", value: "" });
+  while (goals.length < 3) goals.push({ name: "", value: "", projected: "" });
   return { title, theme, goals: goals.slice(0, 3) };
 }
 function serializeT03(f: T03Form): string {
-  const goalLines = f.goals.map(g => `- ${g.name}: ${g.value}`).join("\n");
+  const goalLines = f.goals.map(g =>
+    `${g.name}: ${g.value}\n想定着地: ${g.projected || '---'}`
+  ).join("\n");
   return `# ${f.title}\n\n## テーマ\n${f.theme}\n\n## 目標\n${goalLines}`;
 }
 
@@ -192,7 +239,7 @@ function T03FormFields({ content, onUpdate }: { content: string; onUpdate: (s: s
     setF(next);
     onUpdate(serializeT03(next));
   };
-  const updGoal = (i: number, patch: Partial<KpiRow>) => {
+  const updGoal = (i: number, patch: Partial<GoalRow>) => {
     const goals = f.goals.map((g, idx) => idx === i ? { ...g, ...patch } : g);
     upd({ goals });
   };
@@ -202,10 +249,16 @@ function T03FormFields({ content, onUpdate }: { content: string; onUpdate: (s: s
       <div><FL>今月のテーマ</FL><Input value={f.theme} onChange={e => upd({ theme: e.target.value })} placeholder="テーマを一言で" /></div>
       <FSection title="目標KPI">
         {f.goals.map((g, i) => (
-          <FRow key={i}>
-            <Input className="flex-1" value={g.name} onChange={e => updGoal(i, { name: e.target.value })} placeholder={`目標${i + 1}名`} />
-            <Input className="w-28" value={g.value} onChange={e => updGoal(i, { value: e.target.value })} placeholder="目標値" />
-          </FRow>
+          <div key={i} className="space-y-1.5 p-2.5 rounded-lg bg-muted/40">
+            <FRow>
+              <Input className="flex-1" value={g.name} onChange={e => updGoal(i, { name: e.target.value })} placeholder={`目標${i + 1}名`} />
+              <Input className="w-28" value={g.value} onChange={e => updGoal(i, { value: e.target.value })} placeholder="目標値" />
+            </FRow>
+            <FRow>
+              <span className="text-xs text-muted-foreground whitespace-nowrap self-center">想定着地</span>
+              <Input className="flex-1" value={g.projected} onChange={e => updGoal(i, { projected: e.target.value })} placeholder="想定着地（例：¥0）" />
+            </FRow>
+          </div>
         ))}
       </FSection>
     </div>

@@ -4,7 +4,7 @@ import { SafeArea } from "./SlideLayout";
 interface Template03Data extends SlideTemplateData {
   title: string;
   theme: { label: string; text: string };
-  metrics: { label: string; value: string; reference: string }[];
+  metrics: { label: string; value: string; reference: string; projected?: string }[];
   colors?: { accent: string; primary: string };
 }
 
@@ -35,10 +35,14 @@ export default function Template03({ data }: { data: Template03Data }) {
           {data.metrics.map((metric, index) => (
             <div key={index} className="bg-[#f5f5f5] flex-[1_0_0] min-w-px relative">
               <div className="flex flex-col items-center size-full">
-                <div className="content-stretch flex flex-col gap-[38px] items-center px-[40px] py-[48px] relative size-full">
-                  <div className="[word-break:break-word] content-stretch flex flex-col font-['Gen_Interface_JP_Display:SemiBold',sans-serif] gap-[16px] items-center leading-[normal] not-italic relative shrink-0 whitespace-nowrap">
-                    <p className="relative shrink-0 text-[36px]" style={{ color: accent }}>{metric.label}</p>
-                    <p className="relative shrink-0 text-[#18191e] text-[72px]">{metric.value}</p>
+                <div className="content-stretch flex flex-col gap-[20px] items-center px-[40px] py-[32px] relative size-full">
+                  <div className="[word-break:break-word] content-stretch flex flex-col font-['Gen_Interface_JP_Display:SemiBold',sans-serif] gap-[10px] items-center leading-[normal] not-italic relative shrink-0 whitespace-nowrap">
+                    <p className="relative shrink-0 text-[28px]" style={{ color: accent }}>{metric.label}</p>
+                    <p className="relative shrink-0 text-[#18191e] text-[58px]">{metric.value}</p>
+                    <div className="flex items-baseline gap-[16px] mt-[6px]">
+                      <p className="relative shrink-0 text-[20px]" style={{ color: accent }}>想定着地</p>
+                      <p className="relative shrink-0 text-[#18191e] text-[40px]">{metric.projected || '---'}</p>
+                    </div>
                   </div>
                   <div className="h-0 relative shrink-0 w-full">
                     <div className="absolute inset-[-1px_0_0_0]">
@@ -47,7 +51,7 @@ export default function Template03({ data }: { data: Template03Data }) {
                       </svg>
                     </div>
                   </div>
-                  <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Regular',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#18191e] text-[32px] whitespace-nowrap">
+                  <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Regular',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#18191e] text-[26px] whitespace-nowrap">
                     {metric.reference}
                   </p>
                 </div>

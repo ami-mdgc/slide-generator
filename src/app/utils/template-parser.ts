@@ -37,7 +37,7 @@ export function parseTemplate01Data(slide: Slide, content: string): SlideTemplat
   const title = titleMatch ? titleMatch[1] : slide.title || '';
 
   const summaryItems: { text: string }[] = [];
-  const metrics: { label: string; value: string; reference?: string }[] = [];
+  const metrics: { label: string; value: string; reference?: string; target?: string }[] = [];
 
   // metrics セクションの開始を判定（¥マーク or 既知のメトリクス名）
   const isMetricStart = (line: string) =>
@@ -62,7 +62,9 @@ export function parseTemplate01Data(slide: Slide, content: string): SlideTemplat
       const metricMatch = line.match(/(.+?)[:：]\s*(.+)/);
       if (metricMatch) {
         const [, label, value] = metricMatch;
-        if (label.includes('参考') || label.includes('前月')) {
+        if (label.trim() === '目標') {
+          if (metrics.length > 0) metrics[metrics.length - 1].target = value.trim();
+        } else if (label.includes('参考') || label.includes('前月')) {
           if (metrics.length > 0) metrics[metrics.length - 1].reference = line.trim();
         } else {
           metrics.push({ label: label.trim(), value: value.trim() });
@@ -128,7 +130,7 @@ export function parseTemplate03Data(slide: Slide, content: string): SlideTemplat
     text: themeMatch ? themeMatch[1].trim().replace(/[「」]/g, '') : '',
   };
 
-  const metrics: { label: string; value: string; reference: string }[] = [];
+  const metrics: { label: string; value: string; reference: string; projected?: string }[] = [];
   const goalSection = content.match(/##\s*目標\s*\n([\s\S]+?)(?=\n##|$)/);
 
   if (goalSection) {
@@ -137,7 +139,11 @@ export function parseTemplate03Data(slide: Slide, content: string): SlideTemplat
       const metricMatch = line.match(/(.+?)[:：]\s*(.+)/);
       if (!metricMatch) continue;
       const [, label, value] = metricMatch;
-      if (label.includes('参考') || label.includes('前月')) {
+      if (label.includes('想定着地')) {
+        if (metrics.length > 0) {
+          metrics[metrics.length - 1].projected = value.trim();
+        }
+      } else if (label.includes('参考') || label.includes('前月')) {
         if (metrics.length > 0) {
           metrics[metrics.length - 1].reference = line.trim();
         }
@@ -346,11 +352,22 @@ export function parseTemplate09Data(slide: Slide, content: string): SlideTemplat
   const titleMatch = content.match(/^#\s+(.+)$/m);
   const title = titleMatch ? titleMatch[1] : slide.title || '';
 
-  // タイトルから月を抽出（例: 月次サマリー（4月→5月→6月目標））
-  const monthsMatch = title.match(/[（(](.+?)[）)]/);
-  const months = monthsMatch
-    ? monthsMatch[1].split(/[→\->]/).map(s => s.trim())
-    : ['先々月', '先月', '今月'];
+  // まずプリアンブルのカンマ区切りラベル行を探す（例: 5月, 6月, 7月）
+  const preamble = content.split(/^##\s/m)[0];
+  const labelsLine = preamble.split('\n').find(l => {
+    const t = l.trim();
+    return t && !t.startsWith('#') && t.includes(',');
+  });
+  let months: string[];
+  if (labelsLine) {
+    months = labelsLine.split(/,\s*/).map(s => s.trim()).filter(Boolean).slice(0, 3);
+  } else {
+    // フォールバック: タイトルの括弧内から抽出（例: 月次サマリー（5月→6月→7月目標））
+    const monthsMatch = title.match(/[（(](.+?)[）)]/);
+    months = monthsMatch
+      ? monthsMatch[1].split(/[→\->]/).map(s => s.trim())
+      : ['先々月', '先月', '今月'];
+  }
 
   // チャート用カラー（白背景で視認しやすい色、事業順）
   const CHART_COLORS_LIST = ['#5969a7', '#FFDE35', '#47C3E6', '#BB8DBE', '#546366', '#04A760', '#FA6E31'];
