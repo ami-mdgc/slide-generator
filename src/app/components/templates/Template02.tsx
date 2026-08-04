@@ -35,7 +35,7 @@ export default function Template02({ data }: { data: Template02Data }) {
                   <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full" data-name="ul">
                     {section.items.map((item, itemIndex) => (
                       <p key={itemIndex} className="[word-break:break-word] font-['Gen_Interface_JP_Display:Regular',sans-serif] leading-[1.5] not-italic relative shrink-0 text-[#18191e] text-[24px] w-full">
-                        {item}
+                        - {item}
                       </p>
                     ))}
                   </div>
@@ -55,7 +55,7 @@ export default function Template02({ data }: { data: Template02Data }) {
                   <div className="content-stretch flex flex-col gap-[24px] items-start relative shrink-0 w-full" data-name="ul">
                     {section.items.map((item, itemIndex) => (
                       <p key={itemIndex} className="[word-break:break-word] font-['Gen_Interface_JP_Display:Regular',sans-serif] leading-[1.5] not-italic relative shrink-0 text-[#18191e] text-[28px] w-full">
-                        {item}
+                        - {item}
                       </p>
                     ))}
                   </div>

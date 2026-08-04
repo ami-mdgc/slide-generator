@@ -20,7 +20,17 @@ function Container({ text, accent }: { text: string; accent: string }) {
   );
 }
 
+function parseAmount(s: string): number {
+  return parseInt(s.replace(/[¥,\s]/g, ''), 10) || 0;
+}
+
 function MetricCard({ label, value, reference, target, accent }: { label: string; value: string; reference?: string; target?: string; accent: string }) {
+  const actualNum = parseAmount(value);
+  const targetNum = target ? parseAmount(target) : 0;
+  const hasTarget = target && targetNum > 0;
+  const achieved = hasTarget ? actualNum >= targetNum : null;
+  const rate = hasTarget ? Math.round((actualNum / targetNum) * 100) : null;
+
   return (
     <div className="bg-[#f5f5f5] flex-[1_0_0] min-w-px relative">
       <div className="flex flex-col items-center size-full">
@@ -28,6 +38,17 @@ function MetricCard({ label, value, reference, target, accent }: { label: string
           <div className="[word-break:break-word] content-stretch flex flex-col font-['Gen_Interface_JP_Display:SemiBold',sans-serif] gap-[12px] items-center leading-[normal] not-italic relative shrink-0 whitespace-nowrap">
             <p className="relative shrink-0 text-[30px]" style={{ color: accent }}>{label}</p>
             <p className="relative shrink-0 text-[#18191e] text-[60px]">{value}</p>
+            <div className="flex items-baseline gap-[12px]">
+              <span className="flex items-baseline gap-[2px]">
+                <span className="relative shrink-0 text-[26px] text-[#18191e]/50 font-['Gen_Interface_JP_Display:Medium',sans-serif]">目標：</span>
+                <span className="relative shrink-0 text-[30px] text-[#18191e]/50 font-['Gen_Interface_JP_Display:Medium',sans-serif]">{target || '---'}</span>
+              </span>
+              {rate !== null && (
+                <p className="relative shrink-0 text-[22px] font-['Gen_Interface_JP_Display:Medium',sans-serif]" style={{ color: achieved ? '#16a34a' : '#dc2626' }}>
+                  {achieved ? '達成' : '未達'} {rate}%
+                </p>
+              )}
+            </div>
           </div>
           <div className="h-0 relative shrink-0 w-full">
             <div className="absolute inset-[-1px_0_0_0]">
@@ -38,14 +59,10 @@ function MetricCard({ label, value, reference, target, accent }: { label: string
           </div>
           <div className="content-stretch flex flex-col gap-[14px] items-center w-full">
             {reference && (
-              <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Regular',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#18191e] text-[28px] whitespace-nowrap">
+              <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:Regular',sans-serif] leading-[normal] not-italic relative shrink-0 text-[#18191e] text-[22px] whitespace-nowrap">
                 {reference}
               </p>
             )}
-            <div className="flex items-baseline gap-[16px]">
-              <p className="relative shrink-0 text-[20px]" style={{ color: accent }}>目標</p>
-              <p className="[word-break:break-word] font-['Gen_Interface_JP_Display:SemiBold',sans-serif] relative shrink-0 text-[#18191e] text-[36px] whitespace-nowrap">{target || '---'}</p>
-            </div>
           </div>
         </div>
       </div>
