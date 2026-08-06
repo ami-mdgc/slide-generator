@@ -157,7 +157,7 @@ function createNewProject(slideType: string): Project {
         const m3 = makeMonth(0);
         const revLine = `みんなの買取: 4000000, 4000000, 4000000\n不用品回収の窓口: 5000000, 5000000, 5000000\nおそうじ合衆国: 3000000, 3000000, 3000000\ngaiheki+: 2000000, 2000000, 2000000\n解体相談所: 1000000, 1000000, 1000000\nSENBATSU: 1000000, 1000000, 1000000\nGEKITAI: 1000000, 1000000, 1000000`;
         const prfLine = `みんなの買取: 1200000, 1200000, 1200000\n不用品回収の窓口: 1500000, 1500000, 1500000\nおそうじ合衆国: 900000, 900000, 900000\ngaiheki+: 600000, 600000, 600000\n解体相談所: 300000, 300000, 300000\nSENBATSU: 300000, 300000, 300000\nGEKITAI: 300000, 300000, 300000`;
-        content = `# 月次サマリー（${m1}→${m2}→${m3}目標）\n\n## 売上\n${revLine}\n\n## 粗利\n${prfLine}`;
+        content = `# 月次サマリー（${m1}→${m2}→${m3}目標）\n\n${m1}, ${m2}, ${m3}\n\n## 売上\n${revLine}\n\n## 粗利\n${prfLine}`;
       } else {
         content = `# ${def.name}\n\n内容を入力してください`;
       }
@@ -305,6 +305,18 @@ export default function App() {
   };
 
   const handleOpen = (project: Project) => {
+    // 通常タイプの月次サマリーにtemplate12が誤って割り当てられている場合、template09に修正
+    if (project.slideType !== "四半期報告") {
+      project = {
+        ...project,
+        slides: project.slides.map(s =>
+          s.templateId === "template12" &&
+          /##\s+売上/.test(s.content) && /##\s+粗利/.test(s.content) && /みんなの買取/.test(s.content)
+            ? { ...s, templateId: "template09" }
+            : s
+        ),
+      };
+    }
     setCurrentProject(project);
     const bulk = project.bulkText
       || (project.slides.length > 0
@@ -429,7 +441,7 @@ export default function App() {
         if (/##\s+Q[1-4]/.test(slide.content) && /事業売上/.test(slide.content)) {
           templateId = "template11";
         } else if (/##\s+売上/.test(slide.content) && /##\s+粗利/.test(slide.content) && /みんなの買取/.test(slide.content)) {
-          templateId = "template12";
+          templateId = currentProject.slideType === "四半期報告" ? "template12" : "template09";
         }
         return { ...slide, id: `slide-${i}`, templateId, colors: currentColors };
       }

@@ -434,6 +434,117 @@ function T06FormFields({ content, onUpdate }: { content: string; onUpdate: (s: s
   );
 }
 
+// --- template09 月次サマリーグラフ ---
+const T09_BUSINESSES = ['みんなの買取', '不用品回収の窓口', 'おそうじ合衆国', 'gaiheki+', '解体相談所', 'SENBATSU', 'GEKITAI'];
+
+interface T09Form {
+  title: string;
+  months: [string, string, string];
+  revenues: Record<string, [string, string, string]>;
+  profits: Record<string, [string, string, string]>;
+}
+
+function parseT09(c: string): T09Form {
+  const title = c.match(/^#\s+(.+)$/m)?.[1] ?? '';
+  const preamble = c.split(/^##\s/m)[0];
+  const labelsLine = preamble.split('\n').find(l => {
+    const t = l.trim();
+    return t && !t.startsWith('#') && t.includes(',');
+  });
+  let months: [string, string, string];
+  if (labelsLine) {
+    const parts = labelsLine.split(/,\s*/).map(s => s.trim()).filter(Boolean);
+    months = [parts[0] ?? '', parts[1] ?? '', parts[2] ?? ''];
+  } else {
+    const mm = title.match(/[（(](.+?)[）)]/);
+    if (mm) {
+      const parts = mm[1].split(/[→\->]/).map(s => s.trim().replace(/目標$/, ''));
+      months = [parts[0] ?? '', parts[1] ?? '', parts[2] ?? ''];
+    } else {
+      months = ['先々月', '先月', '今月'];
+    }
+  }
+  const parseBizSection = (raw: string): Record<string, [string, string, string]> => {
+    const result: Record<string, [string, string, string]> = {};
+    for (const biz of T09_BUSINESSES) result[biz] = ['', '', ''];
+    for (const line of raw.split('\n')) {
+      const m = line.match(/^(.+?)[:：]\s*(.+)$/);
+      if (!m) continue;
+      const name = m[1].trim();
+      if (!(name in result)) continue;
+      const cleaned = m[2].replace(/(\d),(\d)/g, '$1$2');
+      const parts = cleaned.split(/,\s*/).map(v => v.replace(/[¥\s]/g, '').trim());
+      result[name] = [parts[0] ?? '', parts[1] ?? '', parts[2] ?? ''];
+    }
+    return result;
+  };
+  const sections = c.split(/^##\s+/m);
+  const revenueRaw = sections.find(s => s.startsWith('売上')) ?? '';
+  const profitRaw = sections.find(s => s.startsWith('粗利')) ?? '';
+  return { title, months, revenues: parseBizSection(revenueRaw), profits: parseBizSection(profitRaw) };
+}
+
+function serializeT09(f: T09Form): string {
+  const monthsLine = f.months.join(', ');
+  const bizLines = (data: Record<string, [string, string, string]>) =>
+    T09_BUSINESSES.map(name => `${name}: ${data[name].join(', ')}`).join('\n');
+  return `# ${f.title}\n\n${monthsLine}\n\n## 売上\n${bizLines(f.revenues)}\n\n## 粗利\n${bizLines(f.profits)}`;
+}
+
+function T09FormFields({ content, onUpdate }: { content: string; onUpdate: (s: string) => void }) {
+  const [f, setF] = useState(() => parseT09(content));
+  useEffect(() => setF(parseT09(content)), [content]);
+  const upd = (patch: Partial<T09Form>) => {
+    const next = { ...f, ...patch };
+    setF(next);
+    onUpdate(serializeT09(next));
+  };
+  const updMonth = (i: 0 | 1 | 2, val: string) => {
+    const months = [...f.months] as [string, string, string];
+    months[i] = val;
+    upd({ months });
+  };
+  const updBiz = (section: 'revenues' | 'profits', biz: string, i: 0 | 1 | 2, val: string) => {
+    const data = { ...f[section] };
+    const values = [...data[biz]] as [string, string, string];
+    values[i] = val;
+    data[biz] = values;
+    upd({ [section]: data });
+  };
+  const BizTable = ({ section, label }: { section: 'revenues' | 'profits'; label: string }) => (
+    <FSection title={label}>
+      {T09_BUSINESSES.map(biz => (
+        <div key={biz}>
+          <FL>{biz}</FL>
+          <FRow>
+            {([0, 1, 2] as const).map(i => (
+              <Input key={i} className="flex-1" value={f[section][biz][i]}
+                onChange={e => updBiz(section, biz, i, e.target.value)}
+                placeholder="0" />
+            ))}
+          </FRow>
+        </div>
+      ))}
+    </FSection>
+  );
+  return (
+    <div className="space-y-5">
+      <div><FL>タイトル</FL><Input value={f.title} onChange={e => upd({ title: e.target.value })} /></div>
+      <FSection title="月ラベル">
+        <FRow>
+          {([0, 1, 2] as const).map(i => (
+            <Input key={i} className="flex-1" value={f.months[i]}
+              onChange={e => updMonth(i, e.target.value)}
+              placeholder={i === 0 ? '先々月' : i === 1 ? '先月' : '今月'} />
+          ))}
+        </FRow>
+      </FSection>
+      <BizTable section="revenues" label="売上" />
+      <BizTable section="profits" label="粗利" />
+    </div>
+  );
+}
+
 // --- Free-form (no template) ---
 function FreeFormFields({ content, onUpdate }: { content: string; onUpdate: (s: string) => void }) {
   const [val, setVal] = useState(content);
@@ -467,6 +578,7 @@ export function SlideFormEditor({ slide, onUpdate }: SlideFormEditorProps) {
       case "template04":    return <T04FormFields {...formProps} />;
       case "template05":    return <T05FormFields {...formProps} />;
       case "template06":    return <T06FormFields {...formProps} />;
+      case "template09":    return <T09FormFields {...formProps} />;
       default:              return <FreeFormFields {...formProps} />;
     }
   };

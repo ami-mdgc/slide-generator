@@ -24,10 +24,14 @@ export default function Template08({ data }: { data: Template08Data }) {
   // 「差」を含む列インデックスを差分列として扱う
   const diffColIndex = headers.findIndex(h => h.includes('差'));
 
-  const getDiffColor = (cell: string) => {
+  // 広告費は下がる方が良いので+/-の色を反転
+  const INVERTED_ROWS = ['広告費'];
+
+  const getDiffColor = (cell: string, rowLabel?: string) => {
     const t = cell.trim();
-    if (t.startsWith('+')) return '#059669';
-    if (t.startsWith('-')) return '#dc2626';
+    const invert = rowLabel ? INVERTED_ROWS.includes(rowLabel) : false;
+    if (t.startsWith('+')) return invert ? '#dc2626' : '#059669';
+    if (t.startsWith('-')) return invert ? '#059669' : '#dc2626';
     return undefined;
   };
 
@@ -68,7 +72,7 @@ export default function Template08({ data }: { data: Template08Data }) {
                 <tr key={ri} style={{ height: rowHeightPct, backgroundColor: ri % 2 === 0 ? '#f5f5f5' : '#ffffff' }}>
                   {row.map((cell, ci) => {
                     const isDiffCol = ci === diffColIndex;
-                    const diffColor = isDiffCol ? getDiffColor(cell) : undefined;
+                    const diffColor = isDiffCol ? getDiffColor(cell, row[0]) : undefined;
                     return (
                       <td
                         key={ci}
